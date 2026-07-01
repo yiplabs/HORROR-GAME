@@ -337,6 +337,8 @@ function frame(now) {
     });
 
     controls.endFrame();
+  } else {
+    music.hush();
   }
 
   renderer.render(scene, camera);

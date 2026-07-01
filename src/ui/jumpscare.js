@@ -20,7 +20,7 @@ export function playJumpscare(canvas, faceCanvas, onDone) {
     const w = canvas.width, h = canvas.height;
     ctx.fillStyle = Math.random() < 0.15 ? '#300' : '#000';
     ctx.fillRect(0, 0, w, h);
-    const scale = (h * (0.85 + t * 0.3)) / faceCanvas.height;
+    const scale = (h * (1.05 + t * 0.35)) / faceCanvas.height;
     const fw = faceCanvas.width * scale, fh = faceCanvas.height * scale;
     const shake = 18 + t * 30;
     const ox = (w - fw) / 2 + (Math.random() - 0.5) * shake;

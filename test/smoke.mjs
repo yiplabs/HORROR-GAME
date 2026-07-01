@@ -74,8 +74,10 @@ await page.waitForTimeout(300);
 // so hold the key long enough for a few seconds of *simulated* time
 const startPos = await page.evaluate(() => ({ ...window.__game.player.pos }));
 await page.keyboard.down('KeyW');
+await page.keyboard.down('Space'); // hop up terrain steps (no auto-jump, like Minecraft)
 await page.waitForTimeout(4000);
 await page.keyboard.up('KeyW');
+await page.keyboard.up('Space');
 const endPos = await page.evaluate(() => ({ ...window.__game.player.pos }));
 const moved = Math.hypot(endPos.x - startPos.x, endPos.z - startPos.z);
 check('player moves with W held (> 2 blocks)', moved > 2, `moved=${moved.toFixed(2)}`);

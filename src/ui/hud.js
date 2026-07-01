@@ -171,6 +171,8 @@ export class HUD {
   }
 
   setDesat(level) {
-    this.desatEl.style.opacity = String(Math.min(0.95, level));
+    const l = Math.min(1, level);
+    this.desatEl.style.opacity = l > 0.02 ? '1' : '0';
+    this.desatEl.style.backdropFilter = l > 0.02 ? `grayscale(${l.toFixed(2)}) brightness(${(1 - l * 0.25).toFixed(2)})` : '';
   }
 }

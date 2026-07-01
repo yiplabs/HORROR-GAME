@@ -258,7 +258,12 @@ export function animateRig(rig, dt, state) {
   // attack: right arm hoists up then slashes down across attackT 0->1
   if (state.attackT > 0) {
     const t = state.attackT;
-    armR.rotation.x = t < 0.4 ? -Math.PI * (t / 0.4) : -Math.PI * (1 - (t - 0.4) / 0.6) - 0.4;
+    if (t < 0.4) {
+      armR.rotation.x = -Math.PI * (t / 0.4);
+    } else {
+      const u = (t - 0.4) / 0.6;
+      armR.rotation.x = -Math.PI * (1 - u) - 0.3 * u;
+    }
     hips.rotation.x = 0.18 * Math.sin(t * Math.PI);
   } else if (state.crouch) {
     hips.rotation.x = 0.55;

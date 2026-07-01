@@ -79,6 +79,16 @@ export class MusicSystem {
     this.built = true;
   }
 
+  // Fade every continuous layer out (menus, pause, death) so the night drone
+  // doesn't keep humming over the title screen.
+  hush() {
+    if (!this.built || !audioReady()) return;
+    const t = actx().currentTime;
+    for (const g of [this.dayGain, this.nightGain, this.chaseGain, this.sawGain, this.staticGain]) {
+      g.gain.setTargetAtTime(0, t, 0.4);
+    }
+  }
+
   // state: { isNight, anyChasing, nearestDist, staticLevel, chainsawLevel, time }
   update(dt, state) {
     this.build();

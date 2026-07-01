@@ -103,9 +103,12 @@ html, body {
   position: absolute; inset: 0; width: 100%; height: 100%;
   image-rendering: pixelated; opacity: 0;
 }
+/* drains color from the 3D view via backdrop-filter (set from JS);
+   mix-blend-mode can't reach the canvas from inside #hud's stacking context */
 #desat-overlay {
   position: absolute; inset: 0;
-  background: #808a90; mix-blend-mode: saturation; opacity: 0;
+  background: rgba(120, 132, 138, 0.08);
+  opacity: 0;
 }
 
 /* ============ MENUS ============ */
