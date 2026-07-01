@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIGHTFALL — Voxel Horror Survival</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <!-- WebGL canvas is inserted here by src/main.js -->
+
+    <div id="hud" class="hidden">
+      <div id="crosshair">+</div>
+      <div id="mine-progress"><div id="mine-progress-fill"></div></div>
+      <div id="top-right">
+        <div id="clock">6:00 AM</div>
+        <div id="day-label">Day 1</div>
+      </div>
+      <div id="bottom-hud">
+        <div id="hearts"></div>
+        <div id="stamina"><div id="stamina-fill"></div></div>
+        <div id="hotbar"></div>
+      </div>
+      <div id="message"></div>
+      <div id="vignette"></div>
+      <div id="damage-flash"></div>
+      <canvas id="static-overlay"></canvas>
+      <div id="desat-overlay"></div>
+    </div>
+
+    <div id="menus">
+      <div id="title-screen" class="menu-screen">
+        <h1 class="game-title">NIGHTFALL</h1>
+        <p class="subtitle">a voxel horror survival</p>
+        <p class="tagline">By day, gather and build. By night, <em>they</em> come.<br>Survive until 6:00 AM. Survive seven nights.</p>
+        <button id="btn-play" class="menu-btn">PLAY</button>
+        <div id="best-score"></div>
+        <div class="controls-help">
+          <div><b>WASD</b> move &nbsp; <b>SHIFT</b> sprint &nbsp; <b>SPACE</b> jump</div>
+          <div><b>MOUSE</b> look &nbsp; <b>LMB</b> mine / attack &nbsp; <b>RMB</b> place block</div>
+          <div><b>1–6 / WHEEL</b> hotbar &nbsp; <b>ESC</b> pause</div>
+        </div>
+      </div>
+
+      <div id="pause-screen" class="menu-screen hidden">
+        <h2>PAUSED</h2>
+        <button id="btn-resume" class="menu-btn">RESUME</button>
+        <button id="btn-restart" class="menu-btn small">RESTART</button>
+        <button id="btn-quit" class="menu-btn small">MAIN MENU</button>
+      </div>
+
+      <div id="death-screen" class="menu-screen hidden">
+        <h2 class="blood">YOU DIED</h2>
+        <p id="death-cause"></p>
+        <p id="death-stats"></p>
+        <button id="btn-retry" class="menu-btn">TRY AGAIN</button>
+        <button id="btn-death-quit" class="menu-btn small">MAIN MENU</button>
+      </div>
+
+      <div id="win-screen" class="menu-screen hidden">
+        <h2 class="dawn">YOU SURVIVED</h2>
+        <p>Seven nights. They never got you.<br>The sun rises on the eighth day.</p>
+        <p id="win-stats"></p>
+        <button id="btn-win-again" class="menu-btn">PLAY AGAIN</button>
+        <button id="btn-win-quit" class="menu-btn small">MAIN MENU</button>
+      </div>
+    </div>
+
+    <canvas id="jumpscare" class="hidden"></canvas>
+    <div id="loading">generating the island&hellip;</div>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Courier New', Courier, monospace;
+  color: #ddd;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app { position: relative; width: 100%; height: 100%; }
+#app > canvas.game-canvas { position: absolute; inset: 0; display: block; }
+
+.hidden { display: none !important; }
+
+/* ============ HUD ============ */
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+
+#crosshair {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px; color: rgba(255,255,255,0.75);
+  text-shadow: 0 0 3px #000;
+}
+
+#mine-progress {
+  position: absolute; left: 50%; top: calc(50% + 22px);
+  transform: translateX(-50%);
+  width: 56px; height: 6px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.35);
+  display: none;
+}
+#mine-progress-fill { height: 100%; width: 0%; background: #d8d8d8; }
+
+#top-right {
+  position: absolute; top: 14px; right: 18px;
+  text-align: right;
+  text-shadow: 2px 2px 0 #000;
+}
+#clock { font-size: 30px; font-weight: bold; letter-spacing: 2px; color: #e8e4d0; }
+#clock.night { color: #ff4d4d; text-shadow: 2px 2px 0 #000, 0 0 12px rgba(255,0,0,0.6); }
+#day-label { font-size: 16px; margin-top: 2px; color: #b8b4a0; }
+#day-label.night { color: #ff8f8f; }
+
+#bottom-hud {
+  position: absolute; bottom: 14px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+#hearts { display: flex; gap: 3px; }
+#hearts canvas { width: 26px; height: 26px; image-rendering: pixelated; }
+
+#stamina { width: 240px; height: 7px; background: rgba(0,0,0,0.6); border: 1px solid #333; }
+#stamina-fill { height: 100%; width: 100%; background: #7fbf4d; }
+#stamina-fill.low { background: #bf7f2d; }
+
+#hotbar { display: flex; gap: 4px; }
+.hotbar-slot {
+  position: relative; width: 48px; height: 48px;
+  background: rgba(10,10,10,0.72);
+  border: 2px solid #4a4a4a;
+}
+.hotbar-slot.selected { border-color: #e8e4d0; box-shadow: 0 0 8px rgba(255,255,240,0.35); }
+.hotbar-slot canvas { position: absolute; inset: 5px; width: 34px; height: 34px; image-rendering: pixelated; }
+.hotbar-slot .count {
+  position: absolute; right: 3px; bottom: 1px;
+  font-size: 13px; font-weight: bold; color: #fff;
+  text-shadow: 1px 1px 0 #000; z-index: 2;
+}
+.hotbar-slot .key {
+  position: absolute; left: 3px; top: 1px;
+  font-size: 10px; color: #999; text-shadow: 1px 1px 0 #000;
+}
+
+#message {
+  position: absolute; left: 50%; top: 26%;
+  transform: translateX(-50%);
+  font-size: 22px; letter-spacing: 3px; text-align: center;
+  color: #d8ccb0; text-shadow: 2px 2px 0 #000, 0 0 14px rgba(0,0,0,0.9);
+  opacity: 0; transition: opacity 0.8s;
+  white-space: nowrap;
+}
+#message.show { opacity: 1; }
+#message.ominous { color: #ff5544; }
+
+#vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(0,0,0,0.55) 100%);
+}
+
+#damage-flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, rgba(180,0,0,0.16) 30%, rgba(140,0,0,0.62) 100%);
+  opacity: 0; transition: opacity 0.35s;
+}
+#damage-flash.hit { opacity: 1; transition: opacity 0.05s; }
+#damage-flash.low-health { opacity: 0.5; }
+
+#static-overlay {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  image-rendering: pixelated; opacity: 0;
+}
+#desat-overlay {
+  position: absolute; inset: 0;
+  background: #808a90; mix-blend-mode: saturation; opacity: 0;
+}
+
+/* ============ MENUS ============ */
+#menus { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+.menu-screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px;
+  background: rgba(2, 2, 6, 0.82);
+  pointer-events: auto;
+  text-align: center;
+}
+
+.game-title {
+  font-size: clamp(48px, 10vw, 110px);
+  letter-spacing: 14px;
+  color: #b40000;
+  text-shadow: 0 0 24px rgba(255, 0, 0, 0.55), 4px 4px 0 #000;
+  animation: flicker 4s infinite;
+}
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.55; }
+  94% { opacity: 1; }
+  96% { opacity: 0.7; }
+  97% { opacity: 1; }
+}
+.subtitle { font-size: 18px; letter-spacing: 6px; color: #887f70; margin-top: -8px; }
+.tagline { font-size: 15px; line-height: 1.6; color: #a89f8c; }
+.tagline em { color: #ff5544; font-style: normal; }
+
+.menu-btn {
+  font-family: inherit;
+  font-size: 26px; font-weight: bold; letter-spacing: 6px;
+  padding: 12px 46px;
+  background: #1a0505; color: #e8e4d0;
+  border: 2px solid #6b1010; cursor: pointer;
+  text-shadow: 2px 2px 0 #000;
+  transition: background 0.15s, border-color 0.15s;
+}
+.menu-btn:hover { background: #3d0a0a; border-color: #c42020; }
+.menu-btn.small { font-size: 15px; padding: 8px 26px; letter-spacing: 3px; }
+
+#best-score { font-size: 14px; color: #7a8a6a; letter-spacing: 2px; }
+
+.controls-help {
+  margin-top: 16px; font-size: 13px; line-height: 2; color: #6f695e; letter-spacing: 1px;
+}
+.controls-help b { color: #b8b09a; }
+
+#pause-screen h2, #death-screen h2, #win-screen h2 {
+  font-size: 52px; letter-spacing: 10px; text-shadow: 3px 3px 0 #000;
+}
+h2.blood { color: #c40000; text-shadow: 3px 3px 0 #000, 0 0 22px rgba(255,0,0,0.5); }
+h2.dawn { color: #ffd27a; text-shadow: 3px 3px 0 #000, 0 0 22px rgba(255,190,80,0.5); }
+#death-cause { font-size: 20px; color: #d8ccb0; letter-spacing: 2px; }
+#death-stats, #win-stats { font-size: 15px; color: #8a8474; letter-spacing: 1px; line-height: 1.8; }
+#death-screen, #win-screen { background: rgba(4, 0, 0, 0.88); }
+#win-screen { background: rgba(10, 6, 0, 0.85); }
+#win-screen p { color: #c8b890; font-size: 16px; line-height: 1.7; letter-spacing: 1px; }
+
+/* ============ JUMPSCARE ============ */
+#jumpscare {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 40; image-rendering: pixelated;
+}
+
+#loading {
+  position: absolute; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: #000; color: #6b6155;
+  font-size: 18px; letter-spacing: 4px;
+}
+
+/* gallery mode labels */
+.gallery-note {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 15; color: #998f7f; font-size: 14px; letter-spacing: 2px;
+  text-shadow: 1px 1px 0 #000;
+}
