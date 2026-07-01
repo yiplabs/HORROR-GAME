@@ -247,8 +247,9 @@ function makeLabel(text) {
 function setupGallery() {
   document.getElementById('menus').classList.add('hidden');
   hud.hide();
+  interaction.held.visible = false;
   daynight.setTime(0.25);
-  const spacing = 2.7;
+  const spacing = 3.2;
   const rowZ = spawn.z - 8;
   const baseX = spawn.x - ((ROSTER.length - 1) / 2) * spacing;
   let maxY = 0;
@@ -261,7 +262,7 @@ function setupGallery() {
     rig.group.rotation.y = Math.PI; // face the camera
     scene.add(rig.group);
     const label = makeLabel(def.name);
-    label.position.set(x, y + 3.1, rowZ);
+    label.position.set(x, y + 3.1 + (i % 2) * 0.8, rowZ); // alternate heights so labels don't collide
     scene.add(label);
     galleryRigs.push(rig);
   });
@@ -352,7 +353,7 @@ requestAnimationFrame(frame);
 
 // ---------- debug / test surface ----------
 window.__game = {
-  renderer, scene, camera, world, player, director, daynight, sm, State, ctx,
+  renderer, scene, camera, world, player, director, daynight, sm, State, ctx, interaction,
   get killers() { return director.killers; },
   debug: {
     play: startRun,

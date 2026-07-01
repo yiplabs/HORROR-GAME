@@ -8,7 +8,7 @@ const CYCLE = CONFIG.DAY_LENGTH + CONFIG.NIGHT_LENGTH;
 // Sky/fog/light keyframes over the cycle. Night fog closing in is the single
 // scariest renderer setting we have — keep it tight.
 const KEYS = [
-  { t: 0.00, sky: '#c96f3f', fog: '#c98a5f', near: 20, far: 95,  sun: 1.0, hemi: 0.55, sunColor: '#ffd9a8' },
+  { t: 0.00, sky: '#c96f3f', fog: '#c98a5f', near: 26, far: 115, sun: 1.4, hemi: 0.7, sunColor: '#ffd9a8' },
   { t: 0.08, sky: '#7fb6e8', fog: '#aecde4', near: 35, far: 140, sun: 2.0, hemi: 0.95, sunColor: '#fff2dd' },
   { t: 0.30, sky: '#8ec2ef', fog: '#b8d4ea', near: 38, far: 150, sun: 2.2, hemi: 1.0,  sunColor: '#fff6e8' },
   { t: 0.50, sky: '#83b4de', fog: '#b0c8dd', near: 34, far: 130, sun: 1.8, hemi: 0.9,  sunColor: '#ffedc8' },

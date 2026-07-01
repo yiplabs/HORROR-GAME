@@ -70,9 +70,11 @@ check('world meshed and rendered (triangles > 1000)', tris > 1000, `triangles=${
 // 2. start a run, move the player
 await page.click('#btn-play');
 await page.waitForTimeout(300);
+// under SwiftShader the clamped dt makes game time run slower than wall time,
+// so hold the key long enough for a few seconds of *simulated* time
 const startPos = await page.evaluate(() => ({ ...window.__game.player.pos }));
 await page.keyboard.down('KeyW');
-await page.waitForTimeout(1500);
+await page.waitForTimeout(4000);
 await page.keyboard.up('KeyW');
 const endPos = await page.evaluate(() => ({ ...window.__game.player.pos }));
 const moved = Math.hypot(endPos.x - startPos.x, endPos.z - startPos.z);

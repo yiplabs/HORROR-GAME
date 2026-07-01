@@ -25,8 +25,12 @@ export class Controls {
 
     document.addEventListener('mousemove', (e) => {
       if (!this.locked || !this.enabled) return;
-      this.yaw -= e.movementX * this.sensitivity;
-      this.pitch -= e.movementY * this.sensitivity;
+      // browsers can report one huge bogus delta right after acquiring the lock
+      if (this.swallowNextMove) { this.swallowNextMove = false; return; }
+      const mx = Math.max(-300, Math.min(300, e.movementX));
+      const my = Math.max(-300, Math.min(300, e.movementY));
+      this.yaw -= mx * this.sensitivity;
+      this.pitch -= my * this.sensitivity;
       this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch));
     });
     document.addEventListener('mousedown', (e) => {
@@ -45,6 +49,7 @@ export class Controls {
     document.addEventListener('pointerlockchange', () => {
       const wasLocked = this.locked;
       this.locked = document.pointerLockElement === this.canvas;
+      if (this.locked && !wasLocked) this.swallowNextMove = true;
       if (wasLocked && !this.locked && this.onLockLost) this.onLockLost();
     });
   }
