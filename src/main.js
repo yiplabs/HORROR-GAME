@@ -225,7 +225,9 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ---------- gallery mode (?gallery): all killers in daylight, for screenshots ----------
-const galleryMode = new URLSearchParams(location.search).has('gallery');
+const urlParams = new URLSearchParams(location.search);
+const galleryMode = urlParams.has('gallery');
+const debugMode = urlParams.has('debug'); // gates the cheat/test console below
 const galleryRigs = [];
 
 function makeLabel(text) {
@@ -367,19 +369,21 @@ if (galleryMode) {
 }
 requestAnimationFrame(frame);
 
-// ---------- debug / test surface ----------
-window.__game = {
-  renderer, scene, camera, world, player, director, daynight, sm, State, ctx, interaction,
-  get killers() { return director.killers; },
-  debug: {
-    play: startRun,
-    setTime: (t) => daynight.setTime(t),
-    spawn: (id) => director.forceSpawn(id, ctx),
-    damage: (n) => player.damage(n, null, player.lastAttacker ?? director.killers[0] ?? null),
-    give: (blockId, n = 64) => {
-      interaction.inventory[blockId] = (interaction.inventory[blockId] ?? 0) + n;
-      hud.updateHotbar(interaction.inventory, interaction.selected);
+// ---------- debug / test surface (only with ?debug so normal play has no easy cheats) ----------
+if (debugMode || galleryMode) {
+  window.__game = {
+    renderer, scene, camera, world, player, director, daynight, sm, State, ctx, interaction,
+    get killers() { return director.killers; },
+    debug: {
+      play: startRun,
+      setTime: (t) => daynight.setTime(t),
+      spawn: (id) => director.forceSpawn(id, ctx),
+      damage: (n) => player.damage(n, null, player.lastAttacker ?? director.killers[0] ?? null),
+      give: (blockId, n = 64) => {
+        interaction.inventory[blockId] = (interaction.inventory[blockId] ?? 0) + n;
+        hud.updateHotbar(interaction.inventory, interaction.selected);
+      },
+      night: (n) => { daynight.day = n; },
     },
-    night: (n) => { daynight.day = n; },
-  },
-};
+  };
+}

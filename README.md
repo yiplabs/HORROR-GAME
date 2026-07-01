@@ -23,6 +23,16 @@ Then open http://localhost:8000 and click PLAY.
 
 Want to meet the cast in daylight first? Open http://localhost:8000/?gallery
 
+### Debug / cheat console
+
+Normal play has no cheats. Add `?debug` to the URL and a `__game` console object
+appears in devtools — `__game.debug.setTime(0.65)` skips to night,
+`__game.debug.spawn('ghostface')` spawns a specific killer (ids: `ghostface`,
+`camper`, `dreamdemon`, `shape`, `goodguy`, `clown`, `tallone`, `nun`,
+`drowned`, `butcher`), `__game.debug.give(7, 64)` grants blocks,
+`__game.debug.night(7)` jumps the night counter. The automated tests drive the
+game through this same surface.
+
 ## Controls
 
 | Input | Action |

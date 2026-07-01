@@ -59,8 +59,13 @@ const consoleErrors = [];
 page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
 page.on('pageerror', (err) => consoleErrors.push(String(err)));
 
-// 1. page loads and renders the world
+// 0. plain page exposes no cheat console
 await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(800);
+check('no debug/cheat surface without ?debug', await page.evaluate(() => window.__game === undefined));
+
+// 1. page loads and renders the world (?debug enables the test surface)
+await page.goto(`http://localhost:${PORT}/?debug`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1500);
 check('page loads with zero console/page errors', consoleErrors.length === 0, consoleErrors.slice(0, 3).join(' | '));
 check('canvas is present', await page.locator('canvas.game-canvas').count() === 1);
