@@ -250,24 +250,38 @@ function setupGallery() {
   interaction.held.visible = false;
   daynight.setTime(0.25);
   const spacing = 3.2;
-  const rowZ = spawn.z - 8;
+  const rowZ = Math.floor(spawn.z) - 8;
+  const cx = Math.floor(spawn.x);
   const baseX = spawn.x - ((ROSTER.length - 1) / 2) * spacing;
-  let maxY = 0;
+
+  // flatten a clearing so the lineup is clean regardless of seed
+  const y0 = Math.max(world.surfaceHeight(cx, rowZ) + 1, CONFIG.WATER_Y + 3);
+  const half = Math.ceil(((ROSTER.length - 1) / 2) * spacing) + 5;
+  for (let x = cx - half; x <= cx + half; x++) {
+    for (let z = rowZ - 16; z <= rowZ + 5; z++) {
+      for (let y = y0; y < CONFIG.WORLD_HEIGHT; y++) world.setBlockSilent(x, y, z, 0);
+      for (let y = y0 - 4; y < y0 - 1; y++) {
+        const id = world.getBlock(x, y, z);
+        if (id === 0 || id === 8) world.setBlockSilent(x, y, z, 2); // fill dips with dirt
+      }
+      world.setBlockSilent(x, y0 - 1, z, 1); // grass stage
+    }
+  }
+  world.meshAll();
+
   ROSTER.forEach((def, i) => {
     const rig = buildRig(def);
     const x = baseX + i * spacing;
-    const y = world.surfaceHeight(Math.floor(x), Math.floor(rowZ)) + 1;
-    maxY = Math.max(maxY, y);
-    rig.group.position.set(x, y, rowZ);
+    rig.group.position.set(x, y0, rowZ);
     rig.group.rotation.y = Math.PI; // face the camera
     scene.add(rig.group);
     const label = makeLabel(def.name);
-    label.position.set(x, y + 3.1 + (i % 2) * 0.8, rowZ); // alternate heights so labels don't collide
+    label.position.set(x, y0 + 3.1 + (i % 2) * 0.7, rowZ); // alternate heights so labels don't collide
     scene.add(label);
     galleryRigs.push(rig);
   });
-  camera.position.set(spawn.x, maxY + 2.2, rowZ - 10);
-  camera.lookAt(spawn.x, maxY + 1, rowZ);
+  camera.position.set(spawn.x, y0 + 2.6, rowZ - 11);
+  camera.lookAt(spawn.x, y0 + 1.2, rowZ);
   const note = document.createElement('div');
   note.className = 'gallery-note';
   note.textContent = 'CHARACTER GALLERY — remove ?gallery from the URL to play';
