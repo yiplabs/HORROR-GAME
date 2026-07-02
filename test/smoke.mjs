@@ -63,7 +63,8 @@ page.on('pageerror', (err) => consoleErrors.push(String(err)));
 await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(800);
 check('no debug/cheat surface without ?debug', await page.evaluate(() => window.__game === undefined));
-check('no cheat menu DOM without ?debug', await page.evaluate(() => document.getElementById('cheat-screen') === null));
+check('no cheat menu DOM without ?debug', await page.evaluate(() =>
+  document.getElementById('cheat-screen') === null && document.getElementById('cheat-hint') === null));
 
 // 1. page loads and renders the world (?debug enables the test surface)
 await page.goto(`http://localhost:${PORT}/?debug`, { waitUntil: 'networkidle' });
@@ -192,6 +193,21 @@ await page.click('#cheat-god'); // mortal again, so the death test below still w
 await page.keyboard.press('Backquote');
 check('cheat menu closes with backtick', await page.evaluate(() =>
   document.getElementById('cheat-screen').classList.contains('hidden')));
+await page.keyboard.press('F9');
+check('cheat menu also opens with F9', await page.evaluate(() =>
+  !document.getElementById('cheat-screen').classList.contains('hidden')));
+await page.keyboard.press('F9');
+check('cheat menu closes with F9', await page.evaluate(() =>
+  document.getElementById('cheat-screen').classList.contains('hidden')));
+// the badge is clickable whenever the cursor is free (pointer lock releases
+// while a panel is open) — and opening cheats closes crafting, one panel at a time
+await page.keyboard.press('KeyC');
+await page.waitForTimeout(300);
+await page.click('#cheat-hint');
+check('HUD CHEATS badge opens the menu (and closes crafting)', await page.evaluate(() =>
+  !document.getElementById('cheat-screen').classList.contains('hidden') &&
+  document.getElementById('crafting-screen').classList.contains('hidden')));
+await page.keyboard.press('Backquote'); // closed again for the death test
 
 // 5. death -> jumpscare -> death screen -> high score persisted
 await page.evaluate(() => { window.__game.debug.night(3); window.__game.debug.damage(99); });

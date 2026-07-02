@@ -28,10 +28,12 @@ Want to meet the cast in daylight first? Open http://localhost:8000/?gallery
 Normal play has no cheats: you start with nothing and craft everything. Add
 `?debug` to the URL and two things appear:
 
-- **The cheat menu** — press `` ` `` (backtick) in-game. Give everything
-  (64 of every block, the Spiked Club, a maxed Rucksack), full heal, god mode,
-  jump to dawn/dusk, set the night counter, summon any killer by name, or
-  banish them all. The world keeps running while it's open.
+- **The cheat menu** — press `` ` `` (backtick) or `F9` in-game, or click the
+  `` ` CHEATS`` badge in the bottom-right of the HUD (if you don't see the
+  badge, `?debug` isn't active). Give everything (64 of every block, the
+  Spiked Club, a maxed Rucksack), full heal, god mode, jump to dawn/dusk,
+  set the night counter, summon any killer by name, or banish them all.
+  The world keeps running while it's open.
 - **The `__game` console object** in devtools — `__game.debug.setTime(0.65)`
   skips to night, `__game.debug.spawn('ghostface')` spawns a specific killer
   (ids: `ghostface`, `camper`, `dreamdemon`, `shape`, `goodguy`, `clown`,
@@ -51,7 +53,7 @@ Normal play has no cheats: you start with nothing and craft everything. Add
 | Right click | place block |
 | 1–9, 0 / wheel | hotbar |
 | C (or E) | crafting — the world does NOT pause |
-| ` (backtick) | cheat menu (`?debug` builds only) |
+| ` (backtick) or F9 | cheat menu (`?debug` builds only) |
 | Esc | pause |
 
 ## How it works

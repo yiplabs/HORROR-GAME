@@ -211,7 +211,8 @@ function toggleCheats(open = !cheats?.isOpen) {
   }
 }
 document.addEventListener('keydown', (e) => {
-  if (e.code === 'Backquote' && sm.current === State.PLAYING) toggleCheats();
+  // F9 backs up the backtick — awkward to reach on some keyboard layouts
+  if ((e.code === 'Backquote' || e.code === 'F9') && sm.current === State.PLAYING) toggleCheats();
 });
 
 // ---------- persistence ----------
@@ -498,8 +499,9 @@ requestAnimationFrame(frame);
 
 // ---------- debug / test surface (only with ?debug so normal play has no easy cheats) ----------
 if (debugMode) {
-  // the in-game cheat menu (backtick to toggle); its DOM only exists in ?debug builds
-  cheats = new CheatMenu({ interaction, crafting, hud, player, director, daynight, ctx });
+  // the in-game cheat menu (backtick or F9); its DOM only exists in ?debug builds
+  cheats = new CheatMenu({ interaction, crafting, hud, player, director, daynight, ctx, onToggle: () => toggleCheats() });
+  console.info('NIGHTFALL ?debug: press ` (backtick) or F9 in-game for the cheat menu; __game is available in this console.');
 }
 if (debugMode || galleryMode) {
   window.__game = {
