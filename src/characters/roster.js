@@ -699,8 +699,9 @@ export const ROSTER = [
       },
       effects(k, ctx, dt) {
         if (k.despawned || ctx.player.dead) return;
+        // must out-pace stamina regen (16/s) up close or the aura means nothing
         if (k.distToPlayer < 10) {
-          ctx.player.stamina = Math.max(0, ctx.player.stamina - dt * 9 * (1 - k.distToPlayer / 10));
+          ctx.player.stamina = Math.max(0, ctx.player.stamina - dt * 30 * (1 - k.distToPlayer / 10));
         }
       },
     },
