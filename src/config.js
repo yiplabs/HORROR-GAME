@@ -37,7 +37,7 @@ export const CONFIG = {
   START_PLANKS: 16,
 
   // --- AI / director ---
-  MAX_KILLERS: 4,
+  MAX_KILLERS: 5,
   KILLER_GRAVITY: 28,
   KILLER_JUMP: 8.2,
   SPAWN_MIN_DIST: 28,

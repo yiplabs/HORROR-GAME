@@ -29,12 +29,22 @@ export function randomSpotAround(world, center, minR, maxR, killer, validator = 
   return null;
 }
 
+const TELEPORT_SMOKE = ['#1a1a22', '#26262e', '#0e0e14'];
+
+function teleportPuffs(killer, ctx, from) {
+  if (!ctx.particles) return;
+  ctx.particles.burst({ x: from.x, y: from.y + 1, z: from.z, colors: TELEPORT_SMOKE, count: 7, speed: 1.4, up: 2, ttl: 0.6 });
+  ctx.particles.burst({ x: killer.pos.x, y: killer.pos.y + 1, z: killer.pos.z, colors: TELEPORT_SMOKE, count: 7, speed: 1.4, up: 2, ttl: 0.6 });
+}
+
 // Teleport somewhere the player is NOT looking. Returns true on success.
 export function teleportUnseen(killer, ctx, center, minR, maxR, sfxName = 'teleport') {
   const spot = randomSpotAround(killer.world, center, minR, maxR, killer,
     (s) => !ctx.playerCanSeePoint(s));
   if (!spot) return false;
+  const from = { x: killer.pos.x, y: killer.pos.y, z: killer.pos.z };
   killer.teleportTo(spot);
+  teleportPuffs(killer, ctx, from);
   if (ctx.sfx && sfxName) ctx.sfx(sfxName, null, killer.pos);
   return true;
 }
@@ -46,7 +56,9 @@ export function teleportBehindPlayer(killer, ctx, dist, sfxName = 'teleport') {
   // camera looks along -Z at yaw 0, so "behind" is +forwardDir inverted
   const spot = surfaceSpot(killer.world, p.pos.x + fx * dist, p.pos.z + fz * dist, killer);
   if (!spot) return false;
+  const from = { x: killer.pos.x, y: killer.pos.y, z: killer.pos.z };
   killer.teleportTo(spot);
+  teleportPuffs(killer, ctx, from);
   if (ctx.sfx && sfxName) ctx.sfx(sfxName, null, killer.pos);
   return true;
 }

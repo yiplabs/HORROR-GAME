@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Chunk, buildChunkGeometries } from './chunk.js';
-import { BLOCKS, AIR, STONE } from './blocks.js';
+import { BLOCKS, AIR, STONE, TORCH } from './blocks.js';
 import { CONFIG } from '../config.js';
 
 const CS = CONFIG.CHUNK_SIZE;
@@ -19,6 +19,7 @@ export class World {
 
     this.dirty = new Set();          // chunk indices queued for remesh
     this.playerPlaced = new Set();   // packed coords of player-built blocks
+    this.torches = new Set();        // packed coords of placed torches (drive point lights)
 
     this.materials = {
       opaque: new THREE.MeshLambertMaterial({ map: atlas.texture, vertexColors: true }),
@@ -70,6 +71,8 @@ export class World {
     const packed = this.packCoord(x, y, z);
     if (id === AIR) this.playerPlaced.delete(packed);
     else if (byPlayer) this.playerPlaced.add(packed);
+    if (id === TORCH) this.torches.add(packed);
+    else this.torches.delete(packed);
 
     this.dirty.add(this.chunkIndex(cx, cz));
     if (lx === 0 && cx > 0) this.dirty.add(this.chunkIndex(cx - 1, cz));
@@ -136,6 +139,19 @@ export class World {
   clear() {
     for (const chunk of this.chunks) chunk.data.fill(0);
     this.playerPlaced.clear();
+    this.torches.clear();
     this.dirty.clear();
+  }
+
+  torchPositions() {
+    const out = [];
+    for (const p of this.torches) {
+      const x = p % WORLD_SIZE;
+      const rest = (p - x) / WORLD_SIZE;
+      const z = rest % WORLD_SIZE;
+      const y = (rest - z) / WORLD_SIZE;
+      out.push({ x, y, z });
+    }
+    return out;
   }
 }

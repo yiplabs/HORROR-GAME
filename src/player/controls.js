@@ -17,8 +17,11 @@ export class Controls {
     document.addEventListener('keydown', (e) => {
       if (e.repeat) return;
       this.keys[e.code] = true;
-      const m = /^Digit([1-7])$/.exec(e.code);
-      if (m && this.enabled) this.hotbarKey = Number(m[1]) - 1;
+      const m = /^Digit([0-9])$/.exec(e.code);
+      if (m && this.enabled) {
+        const n = Number(m[1]);
+        this.hotbarKey = n === 0 ? 9 : n - 1; // 1..9 then 0 = tenth slot
+      }
     });
     document.addEventListener('keyup', (e) => { this.keys[e.code] = false; });
     window.addEventListener('blur', () => {

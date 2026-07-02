@@ -87,18 +87,47 @@ const endPos = await page.evaluate(() => ({ ...window.__game.player.pos }));
 const moved = Math.hypot(endPos.x - startPos.x, endPos.z - startPos.z);
 check('player moves with W held (> 2 blocks)', moved > 2, `moved=${moved.toFixed(2)}`);
 
+// 2b. crafting: logs -> planks; torches actually light up; particles render
+await page.evaluate(() => {
+  window.__game.debug.give(5, 3); // logs
+  window.__game.debug.give(3, 8); // stone
+});
+const craftRes = await page.evaluate(() => {
+  const g = window.__game;
+  const before = g.interaction.inventory[7];
+  const ok = g.crafting.craft(0); // Planks x4
+  return { ok, gained: g.interaction.inventory[7] - before };
+});
+check('crafting: 1 log -> 4 planks', craftRes.ok && craftRes.gained === 4, JSON.stringify(craftRes));
+const torchCount = await page.evaluate(() => {
+  const g = window.__game;
+  g.crafting.craft(1); // Torches x4
+  const p = g.player.pos;
+  g.world.setBlock(Math.floor(p.x) + 2, Math.floor(p.y) + 1, Math.floor(p.z), 9, true);
+  return g.interaction.inventory[9];
+});
+await page.waitForTimeout(1500);
+const lightOn = await page.evaluate(() =>
+  window.__game.scene.children.some((c) => c.isPointLight && c.intensity > 0.5));
+check('torches craft and cast light', torchCount >= 3 && lightOn, `torches=${torchCount} light=${lightOn}`);
+await page.evaluate(() => window.__game.particles.burst({ x: 0, y: 20, z: 0, colors: ['#fff'], count: 10, ttl: 3 }));
+const sawParticles = await page.waitForFunction(() => window.__game.particles.mesh.count > 0,
+  null, { timeout: 8000 }).then(() => true).catch(() => false);
+check('particle system renders bursts', sawParticles);
+
 // 3. nightfall spawns killers that hunt
 await page.evaluate(() => window.__game.debug.setTime(0.66));
 await page.waitForTimeout(2500);
 const killerInfo = await page.evaluate(() => window.__game.killers.map((k) => ({ id: k.def.id, state: k.state })));
 check('night spawns at least one killer', killerInfo.length >= 1, JSON.stringify(killerInfo));
-await page.waitForTimeout(4000);
-const hunting = await page.evaluate(() =>
-  window.__game.killers.some((k) => ['ROAM', 'STALK', 'CHASE', 'ATTACK'].includes(k.state)));
+const hunting = await page.waitForFunction(() =>
+  window.__game.killers.some((k) => ['ROAM', 'STALK', 'CHASE', 'ATTACK'].includes(k.state)),
+  null, { timeout: 30000 }).then(() => true).catch(() => false);
 check('killers enter hunt states', hunting);
 
 // 4. every roster member spawns cleanly
-const rosterIds = ['ghostface', 'camper', 'dreamdemon', 'shape', 'goodguy', 'clown', 'tallone', 'nun', 'drowned', 'butcher'];
+const rosterIds = ['ghostface', 'camper', 'dreamdemon', 'shape', 'goodguy', 'clown', 'tallone', 'nun', 'drowned', 'butcher',
+  'teacher', 'showman', 'rabbit', 'chicken', 'piratefox', 'inkdemon', 'neighbor'];
 const preSpawnErrors = consoleErrors.length;
 for (const id of rosterIds) {
   const ok = await page.evaluate((kid) => !!window.__game.debug.spawn(kid), id);

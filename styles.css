@@ -111,6 +111,48 @@ html, body {
   opacity: 0;
 }
 
+#ink-overlay {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(6, 2, 10, 0.55) 68%, rgba(4, 0, 8, 0.95) 100%);
+  opacity: 0;
+}
+
+/* ============ CRAFTING ============ */
+#crafting-screen {
+  position: absolute; top: 50%; right: 24px;
+  transform: translateY(-50%);
+  width: min(400px, 42vw);
+  max-height: 82vh; overflow-y: auto;
+  background: rgba(8, 6, 4, 0.92);
+  border: 2px solid #4a3a24;
+  padding: 14px;
+  z-index: 15;
+}
+#crafting-screen h3 {
+  color: #d8ccb0; letter-spacing: 3px; font-size: 18px;
+  margin-bottom: 10px; text-shadow: 2px 2px 0 #000;
+}
+.craft-hint { font-size: 11px; color: #8a6a4a; letter-spacing: 1px; }
+.recipe {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 6px;
+  border-bottom: 1px solid #2a2118;
+}
+.recipe.crafted { opacity: 0.45; }
+.recipe-icon { width: 36px; height: 36px; image-rendering: pixelated; flex: none; background: rgba(0,0,0,0.4); border: 1px solid #3a2e1e; }
+.recipe-info { flex: 1; min-width: 0; }
+.recipe-name { color: #e8e4d0; font-size: 14px; font-weight: bold; letter-spacing: 1px; }
+.recipe-cost { color: #b09a6a; font-size: 11.5px; margin: 2px 0; }
+.recipe-desc { color: #7a7264; font-size: 11px; line-height: 1.35; }
+.craft-btn {
+  font-family: inherit; font-size: 12px; font-weight: bold; letter-spacing: 2px;
+  padding: 7px 12px; flex: none;
+  background: #1a2a10; color: #b8d89a;
+  border: 1px solid #3d6b1f; cursor: pointer;
+}
+.craft-btn:hover:not(:disabled) { background: #2a4418; }
+.craft-btn:disabled { background: #1a1512; color: #55503f; border-color: #33281c; cursor: default; }
+
 /* ============ MENUS ============ */
 #menus { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
 .menu-screen {

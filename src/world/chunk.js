@@ -41,6 +41,25 @@ class GeoBuilder {
     }
     this.indices.push(base, base + 1, base + 2, base + 2, base + 1, base + 3);
   }
+
+  // Two diagonal quads for cross blocks (torches). Cutout material is
+  // double-sided, so one quad per diagonal is enough.
+  cross(wx, wy, wz, rect) {
+    for (const [x0, z0, x1, z1] of [[0.15, 0.15, 0.85, 0.85], [0.85, 0.15, 0.15, 0.85]]) {
+      const base = this.positions.length / 3;
+      const corners = [
+        [wx + x0, wy, wz + z0, 0, 0], [wx + x1, wy, wz + z1, 1, 0],
+        [wx + x0, wy + 1, wz + z0, 0, 1], [wx + x1, wy + 1, wz + z1, 1, 1],
+      ];
+      for (const [px, py, pz, u, v] of corners) {
+        this.positions.push(px, py, pz);
+        this.normals.push(0, 1, 0);
+        this.uvs.push(rect.u0 + u * (rect.u1 - rect.u0), rect.v0 + v * (rect.v1 - rect.v0));
+        this.colors.push(1, 1, 1);
+      }
+      this.indices.push(base, base + 1, base + 2, base + 2, base + 1, base + 3);
+    }
+  }
   build() {
     if (this.indices.length === 0) return null;
     const geo = new THREE.BufferGeometry();
@@ -66,6 +85,10 @@ export function buildChunkGeometries(world, chunk, uvRect) {
         if (id === AIR) continue;
         const def = BLOCKS[id];
         const wx = ox + x, wz = oz + z;
+        if (def.cross) {
+          cutout.cross(wx, y, wz, uvRect(def.tiles.side));
+          continue;
+        }
         for (const face of FACES) {
           const nid = world.getBlock(wx + face.dir[0], y + face.dir[1], wz + face.dir[2]);
           if (!faceVisible(id, nid)) continue;

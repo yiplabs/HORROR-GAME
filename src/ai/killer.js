@@ -3,7 +3,7 @@ import { CONFIG } from '../config.js';
 import { moveAABB } from '../core/physics.js';
 import { buildRig, animateRig, disposeRig } from '../characters/rig.js';
 import { lineOfSight } from '../world/raycast.js';
-import { BLOCKS, AIR } from '../world/blocks.js';
+import { BLOCKS, AIR, SPIKES } from '../world/blocks.js';
 
 export const STATES = {
   SPAWNING: 'SPAWNING', ROAM: 'ROAM', STALK: 'STALK', CHASE: 'CHASE',
@@ -109,20 +109,33 @@ export class Killer {
     }
   }
 
-  tryStun(dir) {
+  tryStun(dir, stunMult = 1, kbMult = 1) {
     // already-stunned killers can't be re-stunned — melee spam must not stun-lock
     if (this.despawned || this.state === STATES.SPAWNING || this.state === STATES.STUNNED ||
-        this.immunity > 0) return false;
+        this.immunity > 0 || this.data.noStun) return false;
     this.setState(STATES.STUNNED, null);
-    this.stunTimer = this.stats.stunTime ?? 2;
+    this.stunTimer = (this.stats.stunTime ?? 2) * stunMult;
     this.attackT = 0;
     this.breaking = null;
-    this.vel.x = dir.x * CONFIG.MELEE_KNOCKBACK;
-    this.vel.z = dir.z * CONFIG.MELEE_KNOCKBACK;
+    this.vel.x = dir.x * CONFIG.MELEE_KNOCKBACK * kbMult;
+    this.vel.z = dir.z * CONFIG.MELEE_KNOCKBACK * kbMult;
     this.vel.y = 3.5;
     this.flash(0xffffff);
     if (this.def.behavior?.onStun) this.def.behavior.onStun(this);
     return true;
+  }
+
+  // Spike traps are physical: they bypass stun immunity and even the ink form.
+  triggerSpikes(x, y, z, ctx) {
+    this.world.setBlock(x, y, z, AIR);
+    if (ctx.sfx) { ctx.sfx('break', 'stone', this.pos); ctx.sfx('meleeHit', null, this.pos); }
+    if (this.def.behavior?.onStun) this.def.behavior.onStun(this);
+    this.setState(STATES.STUNNED, null);
+    this.stunTimer = 2.5;
+    this.attackT = 0;
+    this.breaking = null;
+    this.vel.set(0, 4, 0);
+    this.flash(0xff4040);
   }
 
   flash(color) {
@@ -200,6 +213,20 @@ export class Killer {
     if (wantsMove) {
       this.autoHop();
       this.trackStuck(dt, ctx);
+    }
+
+    // spike traps: stepping on one (or shoving into one) springs it
+    if (this.state !== STATES.STUNNED && this.state !== STATES.SPAWNING) {
+      const bx = Math.floor(this.pos.x), bz = Math.floor(this.pos.z);
+      const below = Math.floor(this.pos.y - 0.05);
+      if (this.world.getBlock(bx, below, bz) === SPIKES) {
+        this.triggerSpikes(bx, below, bz, ctx);
+      } else if (this.blockedXZ) {
+        const fx = Math.floor(this.pos.x + Math.sin(this.facing) * (this.width / 2 + 0.4));
+        const fz = Math.floor(this.pos.z + Math.cos(this.facing) * (this.width / 2 + 0.4));
+        const fy = Math.floor(this.pos.y + 0.1);
+        if (this.world.getBlock(fx, fy, fz) === SPIKES) this.triggerSpikes(fx, fy, fz, ctx);
+      }
     }
 
     this.syncRig(dt, ctx);
@@ -345,7 +372,8 @@ export class Killer {
       if (y < 0 || y >= CONFIG.WORLD_HEIGHT) continue;
       if (!this.world.isSolid(bx, y, bz)) continue;
       if (filter && !filter(bx, y, bz)) continue;
-      this.breaking = { x: bx, y, z: bz, time: 0, total: secondsPerBlock };
+      const mult = BLOCKS[this.world.getBlock(bx, y, bz)].killerBreakMult ?? 1;
+      this.breaking = { x: bx, y, z: bz, time: 0, total: secondsPerBlock * mult };
       return true;
     }
     return false;

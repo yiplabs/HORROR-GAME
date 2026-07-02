@@ -57,6 +57,34 @@ const TILE_PAINTERS = {
     if (hash2D(x, (y * 3) | 0, 24) < 0.1) return '#5b8ae6';
     return ditherPick(x, y, 25, ['#3d6dd8', '#3563c8', '#4577e0'], [0.55, 0.25, 0.2]);
   }),
+  10: (px) => px((x, y) => {
+    // torch: transparent tile, stick up the middle with a glowing tip
+    if (x >= 7 && x <= 8 && y >= 6) return ditherPick(x, y, 26, ['#6b4a2e', '#5a3d24'], [0.6, 0.4]);
+    if (x >= 6 && x <= 9 && y >= 2 && y <= 5) {
+      const core = x >= 7 && x <= 8 && y >= 3 && y <= 4;
+      return core ? '#fff4c0' : '#ffb028';
+    }
+    return null;
+  }),
+  11: (px) => px((x, y) => {
+    // reinforced: planks with dark steel banding and rivets
+    if (x === 0 || x === 15 || y === 0 || y === 15) return '#3a3a42';
+    if (Math.abs(x - y) < 2 || Math.abs(x - (15 - y)) < 2) return '#4a4a54';
+    if ((x === 3 || x === 12) && (y === 3 || y === 12)) return '#8a8a96';
+    if (y % 4 === 3) return '#5e4128';
+    return ditherPick(x, y, 27, ['#8a6a40', '#7e6038', '#946f45'], [0.55, 0.25, 0.2]);
+  }),
+  12: (px) => px((x, y) => {
+    // spikes: dark base with pale spike teeth rising from it
+    if (y >= 12) return ditherPick(x, y, 28, ['#4e4e54', '#44444a'], [0.6, 0.4]);
+    const tooth = x % 4;
+    const heightAt = tooth === 1 || tooth === 2 ? 4 : 10;
+    if (y >= heightAt) {
+      const tip = y < heightAt + 3;
+      return tip ? '#c8ccd4' : '#8e929c';
+    }
+    return null;
+  }),
 };
 
 export function buildAtlas() {
@@ -110,5 +138,22 @@ export function buildAtlas() {
     return c;
   };
 
-  return { canvas, texture, uvRect, tileToCanvas };
+  // Representative colors of a tile, sampled from its pixels — block-break
+  // debris is tinted with the block's own texture palette.
+  const paletteCache = new Map();
+  const tilePalette = (tile) => {
+    if (paletteCache.has(tile)) return paletteCache.get(tile);
+    const data = tileToCanvas(tile).getContext('2d').getImageData(0, 0, TILE, TILE).data;
+    const colors = [];
+    for (let i = 0; i < 14; i++) {
+      const p = ((Math.random() * TILE * TILE) | 0) * 4;
+      if (data[p + 3] < 128) continue; // skip transparent pixels
+      colors.push(`rgb(${data[p]},${data[p + 1]},${data[p + 2]})`);
+    }
+    if (colors.length === 0) colors.push('#888888');
+    paletteCache.set(tile, colors);
+    return colors;
+  };
+
+  return { canvas, texture, uvRect, tileToCanvas, tilePalette };
 }

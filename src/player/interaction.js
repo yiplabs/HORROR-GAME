@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { raycastVoxel, lineOfSight } from '../world/raycast.js';
-import { BLOCKS, AIR, WATER, DIRT, STONE, SAND, LOG, LEAVES, PLANKS } from '../world/blocks.js';
+import { BLOCKS, AIR, WATER, DIRT, STONE, SAND, LOG, LEAVES, PLANKS, TORCH, REINFORCED, SPIKES, isTargetable } from '../world/blocks.js';
 import { entityOverlapsBlock } from '../core/physics.js';
+import { SPARK_COLORS } from '../fx/particles.js';
 
 export const HOTBAR = [
   { kind: 'weapon', label: 'Axe' },
@@ -12,7 +13,17 @@ export const HOTBAR = [
   { kind: 'block', id: SAND },
   { kind: 'block', id: LOG },
   { kind: 'block', id: LEAVES },
+  { kind: 'block', id: TORCH },
+  { kind: 'block', id: REINFORCED },
+  { kind: 'block', id: SPIKES },
 ];
+
+const EMPTY_INVENTORY = () => ({
+  [PLANKS]: CONFIG.START_PLANKS, [DIRT]: 0, [STONE]: 0, [SAND]: 0, [LOG]: 0, [LEAVES]: 0,
+  [TORCH]: 0, [REINFORCED]: 0, [SPIKES]: 0,
+});
+
+const targetable = (id) => isTargetable(id);
 
 const _origin = new THREE.Vector3();
 const _dir = new THREE.Vector3();
@@ -20,15 +31,18 @@ const _toKiller = new THREE.Vector3();
 const _killerMid = new THREE.Vector3();
 
 export class Interaction {
-  constructor(world, player, controls, camera, scene, hud, getKillers, atlas) {
+  constructor(world, player, controls, camera, scene, hud, getKillers, atlas, particles) {
     this.world = world;
     this.player = player;
     this.controls = controls;
     this.camera = camera;
     this.hud = hud;
     this.getKillers = getKillers;
+    this.atlas = atlas;
+    this.particles = particles;
+    this.weapon = 'axe'; // 'axe' | 'club' (crafted upgrade)
 
-    this.inventory = { [PLANKS]: CONFIG.START_PLANKS, [DIRT]: 0, [STONE]: 0, [SAND]: 0, [LOG]: 0, [LEAVES]: 0 };
+    this.inventory = EMPTY_INVENTORY();
     this.selected = 0;
     this.mineKey = null;      // packed coord of the block being mined
     this.mineProgress = 0;    // 0..1
@@ -68,6 +82,24 @@ export class Interaction {
     this.axe.rotation.z = -0.35;
     this.held.add(this.axe);
 
+    // crafted upgrade: the spiked club
+    const darkWood = new THREE.MeshLambertMaterial({ color: 0x4a3220 });
+    const stone = new THREE.MeshLambertMaterial({ color: 0x6e6e72 });
+    this.club = new THREE.Group();
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.56, 0.07), darkWood);
+    shaft.position.y = -0.06;
+    const headBlock = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.18), stone);
+    headBlock.position.y = 0.26;
+    this.club.add(shaft, headBlock);
+    for (const [sx, sz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const spike = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), stone);
+      spike.position.set(sx * 0.13, 0.26, sz * 0.13);
+      this.club.add(spike);
+    }
+    this.club.rotation.z = -0.3;
+    this.club.visible = false;
+    this.held.add(this.club);
+
     this.blockPreviews = {};
     for (const slot of HOTBAR) {
       if (slot.kind !== 'block') continue;
@@ -78,7 +110,7 @@ export class Interaction {
       tex.colorSpace = THREE.SRGBColorSpace;
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.3, 0.3, 0.3),
-        new THREE.MeshLambertMaterial({ map: tex })
+        new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.4 })
       );
       mesh.rotation.y = 0.5;
       mesh.visible = false;
@@ -88,11 +120,19 @@ export class Interaction {
   }
 
   reset() {
-    this.inventory = { [PLANKS]: CONFIG.START_PLANKS, [DIRT]: 0, [STONE]: 0, [SAND]: 0, [LOG]: 0, [LEAVES]: 0 };
+    this.inventory = EMPTY_INVENTORY();
     this.selected = 0;
     this.mineKey = null;
     this.mineProgress = 0;
+    this.weapon = 'axe';
+    this.hud.setWeaponIcon('axe');
     this.hud.updateHotbar(this.inventory, this.selected);
+  }
+
+  // one-time crafted upgrade: longer stuns, bigger knockback
+  upgradeWeapon() {
+    this.weapon = 'club';
+    this.hud.setWeaponIcon('club');
   }
 
   update(dt) {
@@ -107,15 +147,16 @@ export class Interaction {
       this.selected = (this.selected + c.wheelDelta % HOTBAR.length + HOTBAR.length) % HOTBAR.length;
     }
     const slot = HOTBAR[this.selected];
-    this.axe.visible = slot.kind === 'weapon';
+    this.axe.visible = slot.kind === 'weapon' && this.weapon === 'axe';
+    this.club.visible = slot.kind === 'weapon' && this.weapon === 'club';
     for (const [id, mesh] of Object.entries(this.blockPreviews)) {
       mesh.visible = slot.kind === 'block' && Number(id) === slot.id;
     }
 
-    // targeting ray from the eye
+    // targeting ray from the eye (stops on solid blocks and torches)
     this.camera.getWorldPosition(_origin);
     this.camera.getWorldDirection(_dir);
-    let hit = raycastVoxel(this.world, _origin, _dir, CONFIG.REACH);
+    let hit = raycastVoxel(this.world, _origin, _dir, CONFIG.REACH, targetable);
     // the solid "floor" below y=0 is a physics wall, not a real block — not
     // targetable (mining it granted infinite drops since setBlock no-ops there)
     if (hit && hit.y < 0) hit = null;
@@ -142,8 +183,25 @@ export class Interaction {
         const mult = (slot.kind === 'weapon' && BLOCKS[hit.id].sfx === 'wood') ? 2 : 1;
         this.mineProgress += (dt * mult) / BLOCKS[hit.id].breakTime;
         if (this.swingT <= 0) this.swingT = 0.6;
+
+        // chips fly off the face being worked
+        this.chipTimer = (this.chipTimer ?? 0) - dt;
+        if (this.chipTimer <= 0) {
+          this.chipTimer = 0.13;
+          this.particles.burst({
+            x: hit.x + 0.5 + hit.nx * 0.55, y: hit.y + 0.5 + hit.ny * 0.55, z: hit.z + 0.5 + hit.nz * 0.55,
+            colors: this.atlas.tilePalette(BLOCKS[hit.id].tiles.side),
+            count: 2, speed: 1.6, up: 2, ttl: 0.5, size: 0.8, spread: 0.2,
+          });
+        }
+
         if (this.mineProgress >= 1) {
           const drops = BLOCKS[hit.id].drops;
+          this.particles.burst({
+            x: hit.x + 0.5, y: hit.y + 0.5, z: hit.z + 0.5,
+            colors: this.atlas.tilePalette(BLOCKS[hit.id].tiles.side),
+            count: 14, speed: 2.8, up: 3.4, ttl: 0.75,
+          });
           this.world.setBlock(hit.x, hit.y, hit.z, AIR);
           if (drops !== AIR && drops !== undefined && this.inventory[drops] !== undefined) {
             this.inventory[drops]++;
@@ -163,12 +221,18 @@ export class Interaction {
       const px = hit.x + hit.nx, py = hit.y + hit.ny, pz = hit.z + hit.nz;
       const targetId = this.world.getBlock(px, py, pz);
       const replaceable = targetId === AIR || targetId === WATER;
+      const ghostly = !BLOCKS[slot.id].solid; // torches can share your cell
       if (replaceable && this.inventory[slot.id] > 0 && py >= 0 && py < CONFIG.WORLD_HEIGHT &&
-          this.world.inBoundsXZ(px, pz) && !this.blockOverlapsEntity(px, py, pz)) {
+          this.world.inBoundsXZ(px, pz) && (ghostly || !this.blockOverlapsEntity(px, py, pz))) {
         this.world.setBlock(px, py, pz, slot.id, true);
         this.inventory[slot.id]--;
         this.placeCooldown = 0.22;
         this.swingT = 0.6;
+        this.particles.burst({
+          x: px + 0.5, y: py + 0.5, z: pz + 0.5,
+          colors: this.atlas.tilePalette(BLOCKS[slot.id].tiles.side),
+          count: 5, speed: 1.4, up: 1.8, ttl: 0.45, size: 0.7,
+        });
         if (this.onSfx) this.onSfx('place', BLOCKS[slot.id].sfx);
         this.hud.updateHotbar(this.inventory, this.selected);
       }
@@ -194,6 +258,8 @@ export class Interaction {
   tryMelee(origin, lookDir) {
     this.meleeCooldown = CONFIG.MELEE_COOLDOWN;
     this.swingT = 0.6;
+    const stunMult = this.weapon === 'club' ? 1.7 : 1;
+    const kbMult = this.weapon === 'club' ? 1.5 : 1;
     let hitAny = false;
     for (const k of this.getKillers()) {
       if (k.despawned) continue;
@@ -203,7 +269,13 @@ export class Interaction {
       _toKiller.subVectors(_killerMid, origin).normalize();
       if (_toKiller.dot(lookDir) < CONFIG.MELEE_CONE) continue;
       if (!lineOfSight(this.world, origin, _killerMid)) continue;
-      if (k.tryStun(_toKiller)) hitAny = true;
+      if (k.tryStun(_toKiller, stunMult, kbMult)) {
+        hitAny = true;
+        this.particles.burst({
+          x: _killerMid.x, y: _killerMid.y, z: _killerMid.z,
+          colors: SPARK_COLORS, count: 10, speed: 3.2, up: 3, ttl: 0.5, size: 0.8,
+        });
+      }
     }
     if (this.onSfx) this.onSfx(hitAny ? 'meleeHit' : 'whoosh');
     return hitAny;

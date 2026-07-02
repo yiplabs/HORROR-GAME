@@ -68,4 +68,44 @@ export const SFX = {
       playOsc({ type: 'sine', freq: 392 * Math.pow(1.26, i), dur: 0.9, gain: 0.14, attack: 0.08, delay: i * 0.22 });
     }
   },
+  // The Teacher heard that.
+  rulerSlap(_d, vol = 1) {
+    playNoise({ dur: 0.035, freq: 2600, q: 2, gain: 0.35 * vol });
+    playOsc({ type: 'square', freq: 900, freqEnd: 300, dur: 0.05, gain: 0.18 * vol });
+  },
+  deepLaugh(_d, vol = 1) {
+    for (let i = 0; i < 3; i++) {
+      playOsc({ type: 'sine', freq: 180 - i * 22, freqEnd: 120 - i * 15, dur: 0.16, gain: 0.35 * vol, delay: i * 0.24 });
+      playOsc({ type: 'triangle', freq: 90 - i * 10, dur: 0.16, gain: 0.2 * vol, delay: i * 0.24 });
+    }
+  },
+  clang(_d, vol = 1) {
+    playNoise({ dur: 0.25, freq: 3200, q: 8, gain: 0.3 * vol });
+    playOsc({ type: 'triangle', freq: 620, freqEnd: 580, dur: 0.3, gain: 0.15 * vol });
+  },
+  foxCharge(_d, vol = 1) {
+    playOsc({ type: 'sawtooth', freq: 300, freqEnd: 1400, dur: 0.5, gain: 0.3 * vol, attack: 0.03 });
+    playNoise({ dur: 0.5, freq: 800, freqEnd: 2600, q: 1.5, gain: 0.2 * vol });
+  },
+  rage(_d, vol = 1) {
+    playOsc({ type: 'square', freq: 800, freqEnd: 190, dur: 0.4, gain: 0.3 * vol, attack: 0.01 });
+    playNoise({ dur: 0.4, freq: 1800, freqEnd: 400, q: 1, gain: 0.25 * vol });
+  },
+  inkDive(_d, vol = 1) {
+    playNoise({ dur: 0.4, freq: 900, freqEnd: 140, filterType: 'lowpass', gain: 0.3 * vol });
+    for (let i = 0; i < 3; i++) {
+      playOsc({ type: 'sine', freq: 220 + Math.random() * 200, freqEnd: 120, dur: 0.07, gain: 0.14 * vol, delay: 0.08 + i * 0.09 });
+    }
+  },
+  hammer(_d, vol = 1) {
+    for (const delay of [0, 0.18]) {
+      playNoise({ dur: 0.06, freq: 500, filterType: 'lowpass', gain: 0.4 * vol, delay });
+      playOsc({ type: 'sine', freq: 140, freqEnd: 80, dur: 0.07, gain: 0.3 * vol, delay });
+    }
+  },
+  craft(_d, vol = 1) {
+    playNoise({ dur: 0.08, freq: 1200, gain: 0.2 * vol });
+    playOsc({ type: 'sine', freq: 880, dur: 0.22, gain: 0.16 * vol, delay: 0.06 });
+    playOsc({ type: 'sine', freq: 1320, dur: 0.18, gain: 0.1 * vol, delay: 0.12 });
+  },
 };

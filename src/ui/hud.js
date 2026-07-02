@@ -41,6 +41,21 @@ function paintAxeIcon() {
   return c;
 }
 
+function paintClubIcon() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 16;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#4a3220';
+  for (let i = 0; i < 9; i++) ctx.fillRect(3 + i, 12 - i, 2, 2);
+  ctx.fillStyle = '#6e6e72';
+  ctx.fillRect(9, 1, 5, 5);
+  ctx.fillStyle = '#9a9aa2';
+  ctx.fillRect(10, 2, 3, 3);
+  ctx.fillStyle = '#c8ccd4';
+  ctx.fillRect(8, 3, 1, 1); ctx.fillRect(14, 3, 1, 1); ctx.fillRect(11, 0, 1, 1);
+  return c;
+}
+
 export class HUD {
   constructor() {
     this.root = document.getElementById('hud');
@@ -84,9 +99,10 @@ export class HUD {
       div.className = 'hotbar-slot';
       const key = document.createElement('span');
       key.className = 'key';
-      key.textContent = String(i + 1);
+      key.textContent = String((i + 1) % 10); // slots 1..9 then 0
       div.appendChild(key);
       const icon = slot.kind === 'weapon' ? paintAxeIcon() : atlas.tileToCanvas(BLOCKS[slot.id].tiles.side);
+      if (slot.kind === 'weapon') this.weaponIconEl = icon;
       div.appendChild(icon);
       let count = null;
       if (slot.kind === 'block') {
@@ -174,5 +190,19 @@ export class HUD {
     const l = Math.min(1, level);
     this.desatEl.style.opacity = l > 0.02 ? '1' : '0';
     this.desatEl.style.backdropFilter = l > 0.02 ? `grayscale(${l.toFixed(2)}) brightness(${(1 - l * 0.25).toFixed(2)})` : '';
+  }
+
+  // The Ink Demon's darkness creeping in from the edges of the screen.
+  setInk(level) {
+    if (!this.inkEl) this.inkEl = document.getElementById('ink-overlay');
+    this.inkEl.style.opacity = String(Math.min(1, level));
+  }
+
+  // swap the weapon slot icon when the club is crafted
+  setWeaponIcon(kind) {
+    if (!this.weaponIconEl) return;
+    const painted = kind === 'club' ? paintClubIcon() : paintAxeIcon();
+    this.weaponIconEl.getContext('2d').clearRect(0, 0, 16, 16);
+    this.weaponIconEl.getContext('2d').drawImage(painted, 0, 0);
   }
 }

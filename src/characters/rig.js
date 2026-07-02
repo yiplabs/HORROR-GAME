@@ -124,6 +124,138 @@ const PROPS = {
     g.add(tuftL, tuftR);
     return g;
   },
+  tophat() {
+    const g = new THREE.Group();
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.045, 0.56), mat(0x141414));
+    const crown = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.3, 0.32), mat(0x1c1c1c));
+    crown.position.y = 0.17;
+    g.add(brim, crown);
+    return g;
+  },
+  roundEars() {
+    const g = new THREE.Group();
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.08), mat(0x5a3d24));
+    l.position.set(-0.19, 0, 0);
+    const r = l.clone();
+    r.position.x = 0.19;
+    g.add(l, r);
+    return g;
+  },
+  tallEars() {
+    const g = new THREE.Group();
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.44, 0.06), mat(0x6a3e8c));
+    l.position.set(-0.15, 0.18, 0);
+    l.rotation.z = 0.12;
+    const inner = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.3, 0.062), mat(0xb88ccc));
+    inner.position.y = 0.02;
+    l.add(inner);
+    const r = l.clone(true);
+    r.position.x = 0.15;
+    r.rotation.z = -0.12;
+    g.add(l, r);
+    return g;
+  },
+  snoutBear() {
+    const g = new THREE.Group();
+    const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.12), mat(0xa8845a));
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.04), mat(0x1a120a));
+    nose.position.set(0, 0.045, 0.07);
+    g.add(muzzle, nose);
+    return g;
+  },
+  snoutBunny() {
+    const g = new THREE.Group();
+    const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.13, 0.11), mat(0x8c5aac));
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.04), mat(0xd06a8a));
+    nose.position.set(0, 0.045, 0.065);
+    g.add(muzzle, nose);
+    return g;
+  },
+  snoutFox() {
+    const g = new THREE.Group();
+    const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 0.24), mat(0xb85a3a));
+    const tip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.05), mat(0x1a120a));
+    tip.position.set(0, 0.04, 0.13);
+    g.add(muzzle, tip);
+    return g;
+  },
+  beak() {
+    const g = new THREE.Group();
+    const top = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.09, 0.16), mat(0xd87818));
+    const bottom = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.045, 0.12), mat(0xb86410));
+    bottom.position.set(0, -0.065, -0.01);
+    g.add(top, bottom);
+    return g;
+  },
+  mic() {
+    const g = new THREE.Group();
+    const stick = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.2, 0.035), mat(0x2a2a2e));
+    const ball = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), mat(0x9a9aa2));
+    ball.position.y = 0.13;
+    g.add(stick, ball);
+    return g;
+  },
+  guitar() {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.36, 0.08), mat(0xa82a2a));
+    const neck = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.44, 0.045), mat(0x3a281a));
+    neck.position.y = 0.36;
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.1, 0.05), mat(0x1c1410));
+    head.position.y = 0.6;
+    g.add(body, neck, head);
+    return g;
+  },
+  hook() {
+    const g = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.06), mat(0x8a8a92));
+    const curve = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.05, 0.14), mat(0xb8b8c0));
+    curve.position.set(0, -0.08, 0.045);
+    const point = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.1, 0.04), mat(0xb8b8c0));
+    point.position.set(0, -0.035, 0.1);
+    g.add(base, curve, point);
+    return g;
+  },
+  cupcake() {
+    const g = new THREE.Group();
+    const wrapper = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.07, 0.15), mat(0xd85a8a));
+    const frosting = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.08, 0.13), mat(0xf0c8d8));
+    frosting.position.y = 0.07;
+    const candle = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.09, 0.025), mat(0xf0e8b0));
+    candle.position.y = 0.16;
+    const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.012), mat(0x181818));
+    eyeL.position.set(-0.03, 0.07, 0.068);
+    const eyeR = eyeL.clone();
+    eyeR.position.x = 0.03;
+    g.add(wrapper, frosting, candle, eyeL, eyeR); // yes, the cupcake watches you
+    return g;
+  },
+  horns() {
+    const g = new THREE.Group();
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.16, 0.07), mat(0x0c0a10));
+    l.position.set(-0.17, 0, 0);
+    l.rotation.z = 0.35;
+    const r = l.clone();
+    r.position.x = 0.17;
+    r.rotation.z = -0.35;
+    g.add(l, r);
+    return g;
+  },
+  ruler() {
+    const g = new THREE.Group();
+    const stick = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.5, 0.02), mat(0xe8e0c0));
+    for (let i = 0; i < 4; i++) {
+      const tick = new THREE.Mesh(new THREE.BoxGeometry(0.037, 0.012, 0.022), mat(0x8a2020));
+      tick.position.y = -0.18 + i * 0.11;
+      stick.add(tick);
+    }
+    g.add(stick);
+    return g;
+  },
+  bignose() {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, 0.13), mat(0xc89060)));
+    return g;
+  },
 };
 
 // Default placement of each prop kind, relative to its attach pivot.
@@ -137,6 +269,20 @@ const PROP_DEFAULTS = {
   longHair: { attach: 'head', position: [0, 0.28, 0], rotation: [0, 0, 0] },
   veil: { attach: 'head', position: [0, 0.22, 0], rotation: [0, 0, 0] },
   hairTufts: { attach: 'head', position: [0, 0.25, 0], rotation: [0, 0, 0] },
+  tophat: { attach: 'head', position: [0, 0.52, 0], rotation: [0, 0, 0] },
+  roundEars: { attach: 'head', position: [0, 0.52, 0], rotation: [0, 0, 0] },
+  tallEars: { attach: 'head', position: [0, 0.55, 0], rotation: [0, 0, 0] },
+  snoutBear: { attach: 'head', position: [0, 0.16, 0.3], rotation: [0, 0, 0] },
+  snoutBunny: { attach: 'head', position: [0, 0.16, 0.3], rotation: [0, 0, 0] },
+  snoutFox: { attach: 'head', position: [0, 0.13, 0.34], rotation: [0, 0, 0] },
+  beak: { attach: 'head', position: [0, 0.17, 0.31], rotation: [0, 0, 0] },
+  mic: { attach: 'armR', position: [0, -BASE.armH + 0.1, 0.12], rotation: [0.5, 0, 0] },
+  guitar: { attach: 'armL', position: [0.05, -BASE.armH + 0.12, 0.16], rotation: [0.35, 0, 0.45] },
+  hook: { attach: 'armR', position: [0, -BASE.armH + 0.02, 0], rotation: [0, 0, 0] },
+  cupcake: { attach: 'armL', position: [0, -BASE.armH + 0.06, 0.12], rotation: [0, 0, 0] },
+  horns: { attach: 'head', position: [0, 0.55, 0], rotation: [0, 0, 0] },
+  ruler: { attach: 'armR', position: [0, -BASE.armH + 0.14, 0.08], rotation: [0.3, 0, 0] },
+  bignose: { attach: 'head', position: [0, 0.16, 0.3], rotation: [0, 0, 0] },
 };
 
 export function buildRig(def) {

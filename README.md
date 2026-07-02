@@ -43,7 +43,8 @@ game through this same surface.
 | Space | jump |
 | Left click | mine block / swing axe |
 | Right click | place block |
-| 1–7 / wheel | hotbar |
+| 1–9, 0 / wheel | hotbar |
+| C (or E) | crafting — the world does NOT pause |
 | Esc | pause |
 
 ## How it works
@@ -73,6 +74,25 @@ game through this same surface.
 | The Nun | Glides, dims the world around her, teleports behind you |
 | The Drowned Girl | Moves in horrible quantized snaps; drains color from the world |
 | The Butcher | Chainsaw sprints in straight lines through *any* terrain |
+| The Teacher | Doesn't see — *hears*. Every block you break makes him faster |
+| The Showman | Frozen while watched; drains your stamina up close; laughs as he advances |
+| The Rabbit | Appears at the edge of your vision and stands still — until you look |
+| The Chicken | You'll hear the kitchen clatter, but she always flanks from behind |
+| The Pirate Fox | Builds up out of sight, then a 9.5-block/s sprint. Watch the windup to cancel it |
+| The Ink Demon | Melts into an invincible ink puddle, slides to you, and rises |
+| The Neighbor | The only killer that *builds* — hammers fences up across your escape route |
+
+## Crafting (press C)
+
+The crafting panel does **not** pause the game. Recipes:
+
+| Recipe | Cost | Effect |
+|---|---|---|
+| Planks ×4 | 1 log | building material |
+| Torches ×4 | 2 planks | real placeable light with flame flicker |
+| Barricades ×2 | 3 planks + 2 stone | killers take 3× longer to break them |
+| Spike Trap | 2 stone + 1 plank | stuns the first killer that touches it (single use) |
+| Spiked Club | 4 planks + 3 stone | one-time weapon upgrade: longer stuns, bigger knockback |
 
 ## Tech
 

@@ -13,7 +13,9 @@ import { ROSTER } from './characters/roster.js';
 import { buildRig, animateRig } from './characters/rig.js';
 import { HUD } from './ui/hud.js';
 import { Menus } from './ui/menus.js';
+import { CraftingUI } from './ui/crafting.js';
 import { playJumpscare } from './ui/jumpscare.js';
+import { Particles, EMBER_COLORS } from './fx/particles.js';
 import { initAudio } from './audio/audio.js';
 import { SFX } from './audio/sfx.js';
 import { MusicSystem } from './audio/music.js';
@@ -50,13 +52,47 @@ const controls = new Controls(renderer.domElement);
 const player = new Player(world, camera, controls);
 const hud = new HUD();
 const director = new Director(world, scene);
-const interaction = new Interaction(world, player, controls, camera, scene, hud, () => director.killers, atlas);
+const particles = new Particles(scene);
+const interaction = new Interaction(world, player, controls, camera, scene, hud, () => director.killers, atlas, particles);
 const music = new MusicSystem();
 const sm = new StateMachine();
 const jumpscareCanvas = document.getElementById('jumpscare');
 
+// torch lighting: a pool of point lights follows the 10 torches nearest the player
+const TORCH_LIGHT_COUNT = 10;
+const torchLights = [];
+for (let i = 0; i < TORCH_LIGHT_COUNT; i++) {
+  const light = new THREE.PointLight(0xffa040, 0, 13, 2);
+  scene.add(light);
+  torchLights.push(light);
+}
+let torchScanTimer = 0;
+let litTorches = [];
+function updateTorchLights(dt) {
+  torchScanTimer -= dt;
+  if (torchScanTimer <= 0) {
+    torchScanTimer = 0.5;
+    litTorches = world.torchPositions()
+      .map((t) => ({ ...t, d: Math.hypot(t.x - player.pos.x, t.z - player.pos.z) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, TORCH_LIGHT_COUNT);
+  }
+  for (let i = 0; i < TORCH_LIGHT_COUNT; i++) {
+    const t = litTorches[i];
+    if (!t) { torchLights[i].intensity = 0; continue; }
+    torchLights[i].position.set(t.x + 0.5, t.y + 0.7, t.z + 0.5);
+    torchLights[i].intensity = 1.5 + Math.sin(ctx.time * 11 + i * 2.7) * 0.3; // flicker
+    if (Math.random() < dt * 0.7) { // the occasional ember
+      particles.burst({
+        x: t.x + 0.5, y: t.y + 0.55, z: t.z + 0.5, colors: EMBER_COLORS,
+        count: 1, speed: 0.25, up: 1.3, ttl: 0.5, size: 0.5, spread: 0.08, gravity: -1,
+      });
+    }
+  }
+}
+
 // Per-frame effects channel: killer behaviors write, HUD/sky/audio read.
-const effects = { lightDim: 0, static: 0, desat: 0, chainsaw: 0 };
+const effects = { lightDim: 0, static: 0, desat: 0, chainsaw: 0, ink: 0 };
 
 // ---------- AI context ----------
 const _camDir = new THREE.Vector3();
@@ -64,9 +100,10 @@ const _toTarget = new THREE.Vector3();
 const _point = new THREE.Vector3();
 
 const ctx = {
-  world, player, daynight, camera, effects,
+  world, player, daynight, camera, effects, particles,
   time: 0,
   night: 1,
+  noise: { time: -99, x: 0, y: 0, z: 0 }, // last player-made noise (The Teacher hears it)
   playerYaw: () => controls.yaw,
   playerLookingAt(killer) {
     camera.getWorldDirection(_camDir);
@@ -124,7 +161,35 @@ daynight.onDawn = (completedNight) => {
 player.onDamage = () => hud.flashDamage();
 player.onStep = () => SFX.step();
 player.onDeath = () => sm.set(State.DEAD);
-interaction.onSfx = (name, detail) => ctx.sfx(name, detail);
+interaction.onSfx = (name, detail) => {
+  ctx.sfx(name, detail);
+  if (name === 'break' || name === 'place') {
+    ctx.noise.time = ctx.time;
+    ctx.noise.x = player.pos.x;
+    ctx.noise.y = player.pos.y;
+    ctx.noise.z = player.pos.z;
+  }
+};
+
+const crafting = new CraftingUI(interaction, hud, atlas, (name) => ctx.sfx(name));
+
+function toggleCrafting(open = !crafting.isOpen) {
+  if (open && sm.current !== State.PLAYING) return;
+  if (open) {
+    crafting.open();
+    controls.enabled = false; // hands busy — the world keeps moving
+    controls.unlock();
+  } else {
+    crafting.close();
+    if (sm.current === State.PLAYING) {
+      controls.enabled = true;
+      controls.lock();
+    }
+  }
+}
+document.addEventListener('keydown', (e) => {
+  if ((e.code === 'KeyC' || e.code === 'KeyE') && sm.current === State.PLAYING) toggleCrafting();
+});
 
 // ---------- persistence ----------
 const BEST_KEY = 'nightfall.best';
@@ -153,7 +218,9 @@ function startRun() {
   daynight.reset();
   player.reset(spawn);
   interaction.reset();
+  crafting.reset();
   ctx.time = 0;
+  ctx.noise.time = -99;
   hud.setHealth(player.health);
   hud.updateHotbar(interaction.inventory, interaction.selected);
   sm.set(State.PLAYING);
@@ -175,12 +242,14 @@ sm.on(State.MENU, {
     controls.enabled = false;
     controls.unlock();
     // clear every trace of the abandoned run: killer rigs, The Nun's darkness,
-    // static/desat overlays, the targeting box
+    // static/desat/ink overlays, the targeting box
+    crafting.close();
     director.reset();
     daynight.lightDim = 0;
-    effects.lightDim = effects.static = effects.desat = effects.chainsaw = 0;
+    effects.lightDim = effects.static = effects.desat = effects.chainsaw = effects.ink = 0;
     hud.setStatic(0);
     hud.setDesat(0);
+    hud.setInk(0);
     interaction.highlight.visible = false;
   },
 });
@@ -195,6 +264,7 @@ sm.on(State.PLAYING, {
 });
 sm.on(State.PAUSED, {
   enter() {
+    crafting.close();
     menus.showPause();
     controls.enabled = false;
     controls.unlock();
@@ -202,6 +272,7 @@ sm.on(State.PAUSED, {
 });
 sm.on(State.DEAD, {
   enter() {
+    crafting.close();
     controls.enabled = false;
     controls.unlock();
     const killer = player.lastAttacker;
@@ -219,6 +290,7 @@ sm.on(State.DEAD, {
 });
 sm.on(State.WON, {
   enter() {
+    crafting.close();
     controls.enabled = false;
     controls.unlock();
     saveBest(CONFIG.WIN_NIGHTS);
@@ -227,6 +299,7 @@ sm.on(State.WON, {
 });
 
 controls.onLockLost = () => {
+  if (crafting.isOpen) return; // deliberate unlock, world keeps running
   if (sm.current === State.PLAYING) sm.set(State.PAUSED);
 };
 // browsers throttle pointer-lock re-requests right after Esc; if Resume couldn't
@@ -236,6 +309,7 @@ renderer.domElement.addEventListener('mousedown', () => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && sm.current === State.PLAYING && !controls.locked) {
+    if (crafting.isOpen) { toggleCrafting(false); return; }
     sm.set(State.PAUSED); // fallback when running without pointer lock (tests)
   }
 });
@@ -267,7 +341,7 @@ function setupGallery() {
   hud.hide();
   interaction.held.visible = false;
   daynight.setTime(0.25);
-  const spacing = 3.2;
+  const spacing = 2.8;
   const rowZ = Math.floor(spawn.z) - 8;
   const cx = Math.floor(spawn.x);
   const baseX = spawn.x - ((ROSTER.length - 1) / 2) * spacing;
@@ -276,7 +350,7 @@ function setupGallery() {
   const y0 = Math.max(world.surfaceHeight(cx, rowZ) + 1, CONFIG.WATER_Y + 3);
   const half = Math.ceil(((ROSTER.length - 1) / 2) * spacing) + 5;
   for (let x = cx - half; x <= cx + half; x++) {
-    for (let z = rowZ - 16; z <= rowZ + 5; z++) {
+    for (let z = rowZ - 22; z <= rowZ + 5; z++) {
       for (let y = y0; y < CONFIG.WORLD_HEIGHT; y++) world.setBlockSilent(x, y, z, 0);
       for (let y = y0 - 4; y < y0 - 1; y++) {
         const id = world.getBlock(x, y, z);
@@ -298,7 +372,7 @@ function setupGallery() {
     scene.add(label);
     galleryRigs.push(rig);
   });
-  camera.position.set(spawn.x, y0 + 2.6, rowZ - 11);
+  camera.position.set(spawn.x, y0 + 3.2, rowZ - (7 + ROSTER.length * 0.72));
   camera.lookAt(spawn.x, y0 + 1.2, rowZ);
   const note = document.createElement('div');
   note.className = 'gallery-note';
@@ -344,6 +418,7 @@ function frame(now) {
     effects.static = 0;
     effects.desat = 0;
     effects.chainsaw = 0;
+    effects.ink = 0;
 
     player.update(dt, !daynight.isNight);
     interaction.update(dt);
@@ -351,6 +426,8 @@ function frame(now) {
     daynight.lightDim = effects.lightDim;
     daynight.update(dt, camera.position);
     world.update();
+    particles.update(dt);
+    updateTorchLights(dt);
 
     hud.setClock(daynight.clockString(), daynight.isNight);
     hud.setDayLabel(daynight.isNight ? `Night ${daynight.day}` : `Day ${daynight.day}`, daynight.isNight);
@@ -358,6 +435,7 @@ function frame(now) {
     hud.setStamina(player.stamina);
     hud.setStatic(effects.static);
     hud.setDesat(effects.desat);
+    hud.setInk(effects.ink);
 
     music.update(dt, {
       isNight: daynight.isNight,
@@ -388,7 +466,7 @@ requestAnimationFrame(frame);
 // ---------- debug / test surface (only with ?debug so normal play has no easy cheats) ----------
 if (debugMode || galleryMode) {
   window.__game = {
-    renderer, scene, camera, world, player, director, daynight, sm, State, ctx, interaction,
+    renderer, scene, camera, world, player, director, daynight, sm, State, ctx, interaction, crafting, particles,
     get killers() { return director.killers; },
     debug: {
       play: startRun,
