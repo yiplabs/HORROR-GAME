@@ -56,6 +56,23 @@ function paintClubIcon() {
   return c;
 }
 
+export function paintBagIcon() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 16;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#3a2818';                             // straps
+  ctx.fillRect(5, 1, 2, 4); ctx.fillRect(9, 1, 2, 4);
+  ctx.fillStyle = '#6b4a2a';                             // bag body
+  ctx.fillRect(3, 4, 10, 10);
+  ctx.fillStyle = '#7d5a36';
+  ctx.fillRect(4, 8, 8, 5);                              // lighter face
+  ctx.fillStyle = '#4a3220';
+  ctx.fillRect(3, 4, 10, 3);                             // flap
+  ctx.fillStyle = '#c8b060';
+  ctx.fillRect(7, 6, 2, 2);                              // buckle
+  return c;
+}
+
 export class HUD {
   constructor() {
     this.root = document.getElementById('hud');
@@ -73,6 +90,9 @@ export class HUD {
     this.desatEl = document.getElementById('desat-overlay');
     this.mineEl = document.getElementById('mine-progress');
     this.mineFill = document.getElementById('mine-progress-fill');
+    this.backpackEl = document.getElementById('backpack');
+    this.backpackCountEl = document.getElementById('backpack-count');
+    this.backpackEl.prepend(paintBagIcon());
 
     this.heartCanvases = [];
     for (let i = 0; i < 5; i++) {
@@ -122,6 +142,12 @@ export class HUD {
       this.slotEls[i].classList.toggle('selected', i === selected);
       if (this.countEls[i]) this.countEls[i].textContent = String(inventory[slot.id] ?? 0);
     });
+  }
+
+  setBackpack(used, cap) {
+    const s = `${used}/${cap}`;
+    if (this.backpackCountEl.textContent !== s) this.backpackCountEl.textContent = s;
+    this.backpackEl.classList.toggle('full', used >= cap);
   }
 
   setHealth(hp) {

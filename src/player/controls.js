@@ -13,6 +13,7 @@ export class Controls {
     this.hotbarKey = null;             // 0-based slot from Digit1..6, consumed per frame
     this.wheelDelta = 0;
     this.onLockLost = null;
+    this.onLockGained = null;
 
     document.addEventListener('keydown', (e) => {
       if (e.repeat) return;
@@ -55,7 +56,12 @@ export class Controls {
     document.addEventListener('pointerlockchange', () => {
       const wasLocked = this.locked;
       this.locked = document.pointerLockElement === this.canvas;
-      if (this.locked && !wasLocked) this.swallowNextMove = true;
+      if (this.locked && !wasLocked) {
+        this.swallowNextMove = true;
+        // a pending lock request can be granted after a menu opened; the
+        // handler gets a chance to release it so the menu stays clickable
+        if (this.onLockGained) this.onLockGained();
+      }
       if (wasLocked && !this.locked && this.onLockLost) this.onLockLost();
     });
   }
@@ -70,7 +76,7 @@ export class Controls {
   }
 
   unlock() {
-    if (this.locked) document.exitPointerLock();
+    document.exitPointerLock(); // harmless no-op when not locked
   }
 
   // Call once per frame after all systems consumed input edges.

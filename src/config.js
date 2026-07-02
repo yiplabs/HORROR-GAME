@@ -34,7 +34,8 @@ export const CONFIG = {
   MELEE_COOLDOWN: 0.45,
   MELEE_KNOCKBACK: 9,
   STUN_IMMUNITY: 5,        // seconds after a stun ends before the next can land
-  START_PLANKS: 16,
+  // you start with NOTHING but the axe — every block in the pack was gathered or crafted
+  BACKPACK_TIERS: [64, 192, 576], // carry capacity: pockets -> Backpack -> Rucksack (crafted)
 
   // --- AI / director ---
   MAX_KILLERS: 5,

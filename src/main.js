@@ -14,6 +14,7 @@ import { buildRig, animateRig } from './characters/rig.js';
 import { HUD } from './ui/hud.js';
 import { Menus } from './ui/menus.js';
 import { CraftingUI } from './ui/crafting.js';
+import { CheatMenu } from './ui/cheats.js';
 import { playJumpscare } from './ui/jumpscare.js';
 import { Particles, EMBER_COLORS } from './fx/particles.js';
 import { initAudio } from './audio/audio.js';
@@ -172,16 +173,18 @@ interaction.onSfx = (name, detail) => {
 };
 
 const crafting = new CraftingUI(interaction, hud, atlas, (name) => ctx.sfx(name));
+let cheats = null; // created in the ?debug section below; normal play has no cheat DOM
 
 function toggleCrafting(open = !crafting.isOpen) {
   if (open && sm.current !== State.PLAYING) return;
   if (open) {
+    cheats?.close(); // one panel at a time
     crafting.open();
     controls.enabled = false; // hands busy — the world keeps moving
     controls.unlock();
   } else {
     crafting.close();
-    if (sm.current === State.PLAYING) {
+    if (sm.current === State.PLAYING && !cheats?.isOpen) {
       controls.enabled = true;
       controls.lock();
     }
@@ -189,6 +192,26 @@ function toggleCrafting(open = !crafting.isOpen) {
 }
 document.addEventListener('keydown', (e) => {
   if ((e.code === 'KeyC' || e.code === 'KeyE') && sm.current === State.PLAYING) toggleCrafting();
+});
+
+function toggleCheats(open = !cheats?.isOpen) {
+  if (!cheats) return;
+  if (open && sm.current !== State.PLAYING) return;
+  if (open) {
+    crafting.close();
+    cheats.open();
+    controls.enabled = false; // same deal as crafting — the world keeps moving
+    controls.unlock();
+  } else {
+    cheats.close();
+    if (sm.current === State.PLAYING && !crafting.isOpen) {
+      controls.enabled = true;
+      controls.lock();
+    }
+  }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Backquote' && sm.current === State.PLAYING) toggleCheats();
 });
 
 // ---------- persistence ----------
@@ -222,9 +245,9 @@ function startRun() {
   ctx.time = 0;
   ctx.noise.time = -99;
   hud.setHealth(player.health);
-  hud.updateHotbar(interaction.inventory, interaction.selected);
+  interaction.syncHud();
   sm.set(State.PLAYING);
-  hud.showMessage('Survive until 6:00 AM. Seven nights.', false, 5);
+  hud.showMessage('You have nothing but an axe. Craft everything. Survive until 6:00 AM.', false, 6);
 }
 
 const menus = new Menus({
@@ -244,6 +267,7 @@ sm.on(State.MENU, {
     // clear every trace of the abandoned run: killer rigs, The Nun's darkness,
     // static/desat/ink overlays, the targeting box
     crafting.close();
+    cheats?.close();
     director.reset();
     daynight.lightDim = 0;
     effects.lightDim = effects.static = effects.desat = effects.chainsaw = effects.ink = 0;
@@ -265,6 +289,7 @@ sm.on(State.PLAYING, {
 sm.on(State.PAUSED, {
   enter() {
     crafting.close();
+    cheats?.close();
     menus.showPause();
     controls.enabled = false;
     controls.unlock();
@@ -273,6 +298,7 @@ sm.on(State.PAUSED, {
 sm.on(State.DEAD, {
   enter() {
     crafting.close();
+    cheats?.close();
     controls.enabled = false;
     controls.unlock();
     const killer = player.lastAttacker;
@@ -291,6 +317,7 @@ sm.on(State.DEAD, {
 sm.on(State.WON, {
   enter() {
     crafting.close();
+    cheats?.close();
     controls.enabled = false;
     controls.unlock();
     saveBest(CONFIG.WIN_NIGHTS);
@@ -299,17 +326,23 @@ sm.on(State.WON, {
 });
 
 controls.onLockLost = () => {
-  if (crafting.isOpen) return; // deliberate unlock, world keeps running
+  if (crafting.isOpen || cheats?.isOpen) return; // deliberate unlock, world keeps running
   if (sm.current === State.PLAYING) sm.set(State.PAUSED);
 };
+// a lock request issued while closing one panel can be granted after another
+// panel opened; release it or the canvas eats every click on the menu
+controls.onLockGained = () => {
+  if (crafting.isOpen || cheats?.isOpen) controls.unlock();
+};
 // browsers throttle pointer-lock re-requests right after Esc; if Resume couldn't
-// re-lock, a click on the world reacquires it
+// re-lock, a click on the world reacquires it (unless a panel wants the cursor)
 renderer.domElement.addEventListener('mousedown', () => {
-  if (sm.current === State.PLAYING && !controls.locked) controls.lock();
+  if (sm.current === State.PLAYING && !controls.locked && !crafting.isOpen && !cheats?.isOpen) controls.lock();
 });
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && sm.current === State.PLAYING && !controls.locked) {
     if (crafting.isOpen) { toggleCrafting(false); return; }
+    if (cheats?.isOpen) { toggleCheats(false); return; }
     sm.set(State.PAUSED); // fallback when running without pointer lock (tests)
   }
 });
@@ -464,9 +497,13 @@ if (galleryMode) {
 requestAnimationFrame(frame);
 
 // ---------- debug / test surface (only with ?debug so normal play has no easy cheats) ----------
+if (debugMode) {
+  // the in-game cheat menu (backtick to toggle); its DOM only exists in ?debug builds
+  cheats = new CheatMenu({ interaction, crafting, hud, player, director, daynight, ctx });
+}
 if (debugMode || galleryMode) {
   window.__game = {
-    renderer, scene, camera, world, player, director, daynight, sm, State, ctx, interaction, crafting, particles,
+    renderer, scene, camera, world, player, director, daynight, sm, State, ctx, interaction, crafting, cheats, particles,
     get killers() { return director.killers; },
     debug: {
       play: startRun,
@@ -475,7 +512,7 @@ if (debugMode || galleryMode) {
       damage: (n) => player.damage(n, null, player.lastAttacker ?? director.killers[0] ?? null),
       give: (blockId, n = 64) => {
         interaction.inventory[blockId] = (interaction.inventory[blockId] ?? 0) + n;
-        hud.updateHotbar(interaction.inventory, interaction.selected);
+        interaction.syncHud();
       },
       night: (n) => { daynight.day = n; },
     },
