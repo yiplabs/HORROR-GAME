@@ -1,7 +1,10 @@
 import { BLOCKS, PLANKS, LOG, STONE, TORCH, REINFORCED, SPIKES } from '../world/blocks.js';
+import { CONFIG } from '../config.js';
+import { paintBagIcon } from './hud.js';
 
 // Crafting: press C in-game. The world DOES NOT pause while you craft —
-// keep one eye over your shoulder.
+// keep one eye over your shoulder. You start a run with NOTHING: every
+// plank, torch, trap and pack on this list has to be made by hand.
 
 export const RECIPES = [
   { name: 'Planks ×4', out: { block: PLANKS, n: 4 }, cost: { [LOG]: 1 },
@@ -12,6 +15,10 @@ export const RECIPES = [
     desc: 'Reinforced planks. Killers take 3× longer to chew through them.' },
   { name: 'Spike Trap', out: { block: SPIKES, n: 1 }, cost: { [STONE]: 2, [PLANKS]: 1 },
     desc: 'Stuns the first killer that steps on it. Single use.' },
+  { name: 'Backpack', out: { backpack: 2 }, cost: { [PLANKS]: 6, [LOG]: 2 }, once: true,
+    desc: `Plank frame, bark straps. Carry ${CONFIG.BACKPACK_TIERS[1]} items instead of ${CONFIG.BACKPACK_TIERS[0]}.` },
+  { name: 'Rucksack', out: { backpack: 3 }, cost: { [PLANKS]: 12, [STONE]: 4 }, once: true,
+    desc: `A pack for a siege. Carry ${CONFIG.BACKPACK_TIERS[2]} items. Needs the Backpack first.` },
   { name: 'Spiked Club', out: { upgrade: true }, cost: { [PLANKS]: 4, [STONE]: 3 }, once: true,
     desc: 'Weapon upgrade: much longer stuns, bigger knockback. One time.' },
 ];
@@ -41,12 +48,14 @@ export class CraftingUI {
     this.crafted = new Set(); // indexes of once-only recipes already made
 
     this.root = document.getElementById('crafting-screen');
+    this.capEl = this.root.querySelector('#craft-backpack');
     this.rows = [];
     const list = this.root.querySelector('#recipe-list');
     RECIPES.forEach((r, i) => {
       const row = document.createElement('div');
       row.className = 'recipe';
-      const icon = r.out.block !== undefined ? atlas.tileToCanvas(BLOCKS[r.out.block].tiles.side) : paintClubIcon();
+      const icon = r.out.block !== undefined ? atlas.tileToCanvas(BLOCKS[r.out.block].tiles.side)
+        : r.out.backpack !== undefined ? paintBagIcon() : paintClubIcon();
       icon.className = 'recipe-icon';
       const info = document.createElement('div');
       info.className = 'recipe-info';
@@ -74,7 +83,15 @@ export class CraftingUI {
   canCraft(i) {
     const r = RECIPES[i];
     if (r.once && this.crafted.has(i)) return false;
-    return Object.entries(r.cost).every(([id, n]) => (this.interaction.inventory[id] ?? 0) >= n);
+    // packs upgrade in order: pockets -> Backpack -> Rucksack
+    if (r.out.backpack !== undefined && this.interaction.backpackTier !== r.out.backpack - 1) return false;
+    if (!Object.entries(r.cost).every(([id, n]) => (this.interaction.inventory[id] ?? 0) >= n)) return false;
+    // crafted blocks must fit in the backpack once the ingredients are spent
+    if (r.out.block !== undefined) {
+      const spent = Object.values(r.cost).reduce((a, b) => a + b, 0);
+      if (this.interaction.totalCarried() - spent + r.out.n > this.interaction.capacity) return false;
+    }
+    return true;
   }
 
   craft(i) {
@@ -83,17 +100,32 @@ export class CraftingUI {
     for (const [id, n] of Object.entries(r.cost)) this.interaction.inventory[id] -= n;
     if (r.out.block !== undefined) {
       this.interaction.inventory[r.out.block] = (this.interaction.inventory[r.out.block] ?? 0) + r.out.n;
+    } else if (r.out.backpack !== undefined) {
+      this.interaction.setBackpackTier(r.out.backpack);
+      this.crafted.add(i);
     } else {
       this.interaction.upgradeWeapon();
       this.crafted.add(i);
     }
-    this.hud.updateHotbar(this.interaction.inventory, this.interaction.selected);
+    this.interaction.syncHud();
     this.refresh();
     if (this.onSfx) this.onSfx('craft');
     return true;
   }
 
+  // cheat-menu hook: own every once-only craft (club + both packs) instantly
+  grantOnce() {
+    RECIPES.forEach((r, i) => {
+      if (!r.once) return;
+      if (r.out.upgrade) this.interaction.upgradeWeapon();
+      if (r.out.backpack !== undefined) this.interaction.setBackpackTier(r.out.backpack);
+      this.crafted.add(i);
+    });
+    this.refresh();
+  }
+
   refresh() {
+    this.capEl.textContent = `Backpack: ${this.interaction.totalCarried()} / ${this.interaction.capacity}`;
     RECIPES.forEach((r, i) => {
       const done = r.once && this.crafted.has(i);
       this.rows[i].btn.disabled = !this.canCraft(i);

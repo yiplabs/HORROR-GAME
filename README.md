@@ -23,15 +23,21 @@ Then open http://localhost:8000 and click PLAY.
 
 Want to meet the cast in daylight first? Open http://localhost:8000/?gallery
 
-### Debug / cheat console
+### Debug / cheat menu
 
-Normal play has no cheats. Add `?debug` to the URL and a `__game` console object
-appears in devtools — `__game.debug.setTime(0.65)` skips to night,
-`__game.debug.spawn('ghostface')` spawns a specific killer (ids: `ghostface`,
-`camper`, `dreamdemon`, `shape`, `goodguy`, `clown`, `tallone`, `nun`,
-`drowned`, `butcher`), `__game.debug.give(7, 64)` grants blocks,
-`__game.debug.night(7)` jumps the night counter. The automated tests drive the
-game through this same surface.
+Normal play has no cheats: you start with nothing and craft everything. Add
+`?debug` to the URL and two things appear:
+
+- **The cheat menu** — press `` ` `` (backtick) in-game. Give everything
+  (64 of every block, the Spiked Club, a maxed Rucksack), full heal, god mode,
+  jump to dawn/dusk, set the night counter, summon any killer by name, or
+  banish them all. The world keeps running while it's open.
+- **The `__game` console object** in devtools — `__game.debug.setTime(0.65)`
+  skips to night, `__game.debug.spawn('ghostface')` spawns a specific killer
+  (ids: `ghostface`, `camper`, `dreamdemon`, `shape`, `goodguy`, `clown`,
+  `tallone`, `nun`, `drowned`, `butcher`, …), `__game.debug.give(7, 64)`
+  grants blocks, `__game.debug.night(7)` jumps the night counter. The
+  automated tests drive the game through this same surface.
 
 ## Controls
 
@@ -45,10 +51,16 @@ game through this same surface.
 | Right click | place block |
 | 1–9, 0 / wheel | hotbar |
 | C (or E) | crafting — the world does NOT pause |
+| ` (backtick) | cheat menu (`?debug` builds only) |
 | Esc | pause |
 
 ## How it works
 
+- **You start with nothing.** Just the axe in your hand — no free blocks. Every
+  plank, torch, barricade, trap, weapon upgrade and pack is gathered and crafted.
+- **Your backpack is finite.** Pockets hold 64 items total. Craft a Backpack
+  (192) and then a Rucksack (576) to carry more; when you're full, blocks
+  won't break until you make room.
 - **The clock is everything.** The HUD clock (top right) turns red at 9 PM. Killers
   spawn at nightfall and vanish at 6 AM. Each night spawns more of them, faster.
 - **Your axe stuns, it does not kill.** A clean hit knocks a killer back and
@@ -84,7 +96,8 @@ game through this same surface.
 
 ## Crafting (press C)
 
-The crafting panel does **not** pause the game. Recipes:
+You begin every run empty-handed, so this panel is how you get *everything*.
+It does **not** pause the game. Recipes:
 
 | Recipe | Cost | Effect |
 |---|---|---|
@@ -92,6 +105,8 @@ The crafting panel does **not** pause the game. Recipes:
 | Torches ×4 | 2 planks | real placeable light with flame flicker |
 | Barricades ×2 | 3 planks + 2 stone | killers take 3× longer to break them |
 | Spike Trap | 2 stone + 1 plank | stuns the first killer that touches it (single use) |
+| Backpack | 6 planks + 2 logs | carry 192 items instead of the 64 your pockets hold |
+| Rucksack | 12 planks + 4 stone | carry 576 items (requires the Backpack) |
 | Spiked Club | 4 planks + 3 stone | one-time weapon upgrade: longer stuns, bigger knockback |
 
 ## Tech

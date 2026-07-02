@@ -50,6 +50,19 @@ html, body {
   transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
+
+/* backpack capacity meter: carried / capacity, sits beside the hotbar */
+#backpack {
+  position: absolute; left: calc(100% + 10px); bottom: 2px;
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(10,10,10,0.72);
+  border: 2px solid #4a4a4a;
+  padding: 5px 9px 5px 6px;
+}
+#backpack canvas { width: 22px; height: 22px; image-rendering: pixelated; }
+#backpack span { font-size: 12px; font-weight: bold; color: #d8ccb0; text-shadow: 1px 1px 0 #000; }
+#backpack.full { border-color: #7a3020; }
+#backpack.full span { color: #ff6a5a; }
 #hearts { display: flex; gap: 3px; }
 #hearts canvas { width: 26px; height: 26px; image-rendering: pixelated; }
 
@@ -133,6 +146,7 @@ html, body {
   margin-bottom: 10px; text-shadow: 2px 2px 0 #000;
 }
 .craft-hint { font-size: 11px; color: #8a6a4a; letter-spacing: 1px; }
+#craft-backpack { font-size: 12px; color: #b09a6a; letter-spacing: 1px; margin: -4px 0 8px; }
 .recipe {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 6px;
@@ -152,6 +166,49 @@ html, body {
 }
 .craft-btn:hover:not(:disabled) { background: #2a4418; }
 .craft-btn:disabled { background: #1a1512; color: #55503f; border-color: #33281c; cursor: default; }
+
+/* ============ CHEAT MENU (?debug builds only) ============ */
+#cheat-screen {
+  position: absolute; top: 50%; left: 24px;
+  transform: translateY(-50%);
+  width: min(340px, 40vw);
+  max-height: 82vh; overflow-y: auto;
+  background: rgba(10, 4, 8, 0.93);
+  border: 2px solid #5a2430;
+  padding: 14px;
+  z-index: 16;
+}
+#cheat-screen h3 {
+  color: #e8c8d0; letter-spacing: 3px; font-size: 18px;
+  margin-bottom: 12px; text-shadow: 2px 2px 0 #000;
+}
+.cheat-hint { font-size: 11px; color: #8a4a5a; letter-spacing: 1px; }
+.cheat-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.cheat-btn {
+  flex: 1;
+  font-family: inherit; font-size: 12px; font-weight: bold; letter-spacing: 2px;
+  padding: 9px 8px;
+  background: #2a1015; color: #e8b8c0;
+  border: 1px solid #7a2535; cursor: pointer;
+}
+.cheat-btn:hover { background: #3d1820; }
+.cheat-btn.on {
+  background: #4a1a25; color: #ffd8e0; border-color: #ff5577;
+  box-shadow: 0 0 8px rgba(255, 60, 100, 0.35);
+}
+.cheat-btn.slim { flex: 0 0 44px; }
+.cheat-btn.slim-wide { flex: 0 0 96px; }
+#cheat-night-label {
+  flex: 1; align-self: center; text-align: center;
+  color: #d8ccb0; font-size: 13px; font-weight: bold; letter-spacing: 2px;
+}
+#cheat-killer {
+  flex: 1;
+  font-family: inherit; font-size: 12px; letter-spacing: 1px;
+  background: #1a0d12; color: #e8d8c0;
+  border: 1px solid #5a2430; padding: 8px;
+}
+.cheat-note { font-size: 11px; color: #7a5a64; line-height: 1.45; margin-top: 4px; }
 
 /* ============ MENUS ============ */
 #menus { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
@@ -182,6 +239,7 @@ html, body {
 .subtitle { font-size: 18px; letter-spacing: 6px; color: #887f70; margin-top: -8px; }
 .tagline { font-size: 15px; line-height: 1.6; color: #a89f8c; }
 .tagline em { color: #ff5544; font-style: normal; }
+.tagline b { color: #d8ccb0; }
 
 .menu-btn {
   font-family: inherit;

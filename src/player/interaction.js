@@ -18,8 +18,9 @@ export const HOTBAR = [
   { kind: 'block', id: SPIKES },
 ];
 
+// A run starts with empty hands: no free blocks, base pockets only.
 const EMPTY_INVENTORY = () => ({
-  [PLANKS]: CONFIG.START_PLANKS, [DIRT]: 0, [STONE]: 0, [SAND]: 0, [LOG]: 0, [LEAVES]: 0,
+  [PLANKS]: 0, [DIRT]: 0, [STONE]: 0, [SAND]: 0, [LOG]: 0, [LEAVES]: 0,
   [TORCH]: 0, [REINFORCED]: 0, [SPIKES]: 0,
 });
 
@@ -43,11 +44,13 @@ export class Interaction {
     this.weapon = 'axe'; // 'axe' | 'club' (crafted upgrade)
 
     this.inventory = EMPTY_INVENTORY();
+    this.backpackTier = 1;    // 1 = pockets; crafting a Backpack/Rucksack raises it
     this.selected = 0;
     this.mineKey = null;      // packed coord of the block being mined
     this.mineProgress = 0;    // 0..1
     this.meleeCooldown = 0;
     this.placeCooldown = 0;
+    this.fullWarnT = 0;       // throttles the "backpack full" message
     this.onSfx = null;        // (name, detail) => void
 
     // targeted-block highlight
@@ -121,12 +124,13 @@ export class Interaction {
 
   reset() {
     this.inventory = EMPTY_INVENTORY();
+    this.backpackTier = 1;
     this.selected = 0;
     this.mineKey = null;
     this.mineProgress = 0;
     this.weapon = 'axe';
     this.hud.setWeaponIcon('axe');
-    this.hud.updateHotbar(this.inventory, this.selected);
+    this.syncHud();
   }
 
   // one-time crafted upgrade: longer stuns, bigger knockback
@@ -135,10 +139,32 @@ export class Interaction {
     this.hud.setWeaponIcon('club');
   }
 
+  // ---- backpack: everything you carry shares one capacity pool ----
+  get capacity() { return CONFIG.BACKPACK_TIERS[this.backpackTier - 1]; }
+
+  totalCarried() {
+    let n = 0;
+    for (const v of Object.values(this.inventory)) n += v;
+    return n;
+  }
+
+  hasRoom(n = 1) { return this.totalCarried() + n <= this.capacity; }
+
+  setBackpackTier(tier) {
+    this.backpackTier = Math.max(this.backpackTier, tier);
+    this.syncHud();
+  }
+
+  syncHud() {
+    this.hud.updateHotbar(this.inventory, this.selected);
+    this.hud.setBackpack(this.totalCarried(), this.capacity);
+  }
+
   update(dt) {
     const c = this.controls;
     this.meleeCooldown = Math.max(0, this.meleeCooldown - dt);
     this.placeCooldown = Math.max(0, this.placeCooldown - dt);
+    this.fullWarnT = Math.max(0, this.fullWarnT - dt);
     this.swingT = Math.max(0, this.swingT - dt * 4);
 
     // hotbar selection
@@ -197,19 +223,27 @@ export class Interaction {
 
         if (this.mineProgress >= 1) {
           const drops = BLOCKS[hit.id].drops;
-          this.particles.burst({
-            x: hit.x + 0.5, y: hit.y + 0.5, z: hit.z + 0.5,
-            colors: this.atlas.tilePalette(BLOCKS[hit.id].tiles.side),
-            count: 14, speed: 2.8, up: 3.4, ttl: 0.75,
-          });
-          this.world.setBlock(hit.x, hit.y, hit.z, AIR);
-          if (drops !== AIR && drops !== undefined && this.inventory[drops] !== undefined) {
-            this.inventory[drops]++;
+          const wantsDrop = drops !== AIR && drops !== undefined && this.inventory[drops] !== undefined;
+          if (wantsDrop && !this.hasRoom(1)) {
+            // backpack full: the block holds together until there's room for the drop
+            this.mineProgress = 1;
+            if (this.fullWarnT <= 0) {
+              this.fullWarnT = 2.5;
+              this.hud.showMessage('Backpack full — place blocks or craft a bigger pack.');
+            }
+          } else {
+            this.particles.burst({
+              x: hit.x + 0.5, y: hit.y + 0.5, z: hit.z + 0.5,
+              colors: this.atlas.tilePalette(BLOCKS[hit.id].tiles.side),
+              count: 14, speed: 2.8, up: 3.4, ttl: 0.75,
+            });
+            this.world.setBlock(hit.x, hit.y, hit.z, AIR);
+            if (wantsDrop) this.inventory[drops]++;
+            if (this.onSfx) this.onSfx('break', BLOCKS[hit.id].sfx);
+            this.mineKey = null;
+            this.mineProgress = 0;
+            this.syncHud();
           }
-          if (this.onSfx) this.onSfx('break', BLOCKS[hit.id].sfx);
-          this.mineKey = null;
-          this.mineProgress = 0;
-          this.hud.updateHotbar(this.inventory, this.selected);
         }
       }
     }
@@ -234,7 +268,7 @@ export class Interaction {
           count: 5, speed: 1.4, up: 1.8, ttl: 0.45, size: 0.7,
         });
         if (this.onSfx) this.onSfx('place', BLOCKS[slot.id].sfx);
-        this.hud.updateHotbar(this.inventory, this.selected);
+        this.syncHud();
       }
     }
 

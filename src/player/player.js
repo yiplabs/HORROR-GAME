@@ -21,6 +21,7 @@ export class Player {
     this.stamina = 100;
     this.sprinting = false;
     this.dead = false;
+    this.godMode = false; // cheat-menu toggle (?debug builds): no damage sticks
     this.lastAttacker = null;
     this.stepTimer = 0;
 
@@ -35,6 +36,7 @@ export class Player {
     this.health = CONFIG.MAX_HEALTH;
     this.stamina = 100;
     this.dead = false;
+    this.godMode = false;
     this.lastAttacker = null;
     this.controls.yaw = Math.random() * Math.PI * 2;
     this.controls.pitch = 0;
@@ -99,8 +101,11 @@ export class Player {
       this.health = Math.min(CONFIG.MAX_HEALTH, this.health + CONFIG.HEALTH_REGEN_DAY * dt);
     }
 
-    // void safety net
-    if (this.pos.y < -12) this.damage(99, null, null);
+    // void safety net (god mode gets dropped back onto the island instead)
+    if (this.pos.y < -12) {
+      if (this.godMode) { this.pos.y = CONFIG.WORLD_HEIGHT + 6; this.vel.y = 0; }
+      else this.damage(99, null, null);
+    }
 
     this.syncCamera();
   }
@@ -110,7 +115,7 @@ export class Player {
   }
 
   damage(amount, fromPos, attacker) {
-    if (this.dead) return;
+    if (this.dead || this.godMode) return;
     this.health -= amount;
     if (attacker) this.lastAttacker = attacker;
     if (fromPos) {
