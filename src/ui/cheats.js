@@ -11,7 +11,7 @@ import { ROSTER } from '../characters/roster.js';
 const GIVE_IDS = [PLANKS, DIRT, STONE, SAND, LOG, LEAVES, TORCH, REINFORCED, SPIKES];
 
 export class CheatMenu {
-  constructor({ interaction, crafting, hud, player, director, daynight, ctx }) {
+  constructor({ interaction, crafting, hud, player, director, daynight, ctx, onToggle }) {
     this.interaction = interaction;
     this.crafting = crafting;
     this.hud = hud;
@@ -20,6 +20,15 @@ export class CheatMenu {
     this.daynight = daynight;
     this.ctx = ctx;
     this.openFlag = false;
+
+    // a small badge on the HUD so a ?debug run makes the menu discoverable:
+    // seeing it also confirms debug mode is actually on
+    this.hint = document.createElement('div');
+    this.hint.id = 'cheat-hint';
+    this.hint.textContent = '` CHEATS';
+    this.hint.title = 'press ` (backtick) or F9 — or click';
+    this.hint.addEventListener('click', () => { if (onToggle) onToggle(); });
+    document.getElementById('hud').appendChild(this.hint);
 
     // built only in ?debug sessions, so a normal game has no cheat DOM at all
     this.root = document.createElement('div');

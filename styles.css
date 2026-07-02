@@ -210,6 +210,18 @@ html, body {
 }
 .cheat-note { font-size: 11px; color: #7a5a64; line-height: 1.45; margin-top: 4px; }
 
+/* HUD badge (?debug only): proves debug mode is on, and opens the menu on click */
+#cheat-hint {
+  position: absolute; right: 18px; bottom: 14px;
+  padding: 6px 10px;
+  background: rgba(10, 4, 8, 0.72);
+  border: 1px solid #5a2430;
+  color: #b86a7a; font-size: 12px; font-weight: bold; letter-spacing: 2px;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: auto; cursor: pointer;
+}
+#cheat-hint:hover { color: #e8b8c0; background: rgba(40, 12, 20, 0.8); }
+
 /* ============ MENUS ============ */
 #menus { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
 .menu-screen {
