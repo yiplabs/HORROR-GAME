@@ -65,9 +65,9 @@ export class Player {
     const moving = _wish.lengthSq() > 0;
     if (moving) _wish.normalize().applyAxisAngle(THREE.Object3D.DEFAULT_UP, c.yaw);
 
-    // sprint + stamina
+    // sprint + stamina (hysteresis: needs 15 to start, keeps going until drained)
     const wantsSprint = !!c.keys.ShiftLeft && moving && _wish.dot(this.forwardDir()) > 0.3;
-    this.sprinting = wantsSprint && this.stamina > 1;
+    this.sprinting = wantsSprint && this.stamina > (this.sprinting ? 1 : 15);
     if (this.sprinting) this.stamina = Math.max(0, this.stamina - CONFIG.STAMINA_DRAIN * dt);
     else this.stamina = Math.min(100, this.stamina + CONFIG.STAMINA_REGEN * dt);
 

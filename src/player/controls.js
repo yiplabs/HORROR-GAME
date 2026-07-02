@@ -17,11 +17,14 @@ export class Controls {
     document.addEventListener('keydown', (e) => {
       if (e.repeat) return;
       this.keys[e.code] = true;
-      const m = /^Digit([1-6])$/.exec(e.code);
-      if (m) this.hotbarKey = Number(m[1]) - 1;
+      const m = /^Digit([1-7])$/.exec(e.code);
+      if (m && this.enabled) this.hotbarKey = Number(m[1]) - 1;
     });
     document.addEventListener('keyup', (e) => { this.keys[e.code] = false; });
-    window.addEventListener('blur', () => { this.keys = Object.create(null); });
+    window.addEventListener('blur', () => {
+      this.keys = Object.create(null);
+      this.mouseDown[0] = this.mouseDown[1] = this.mouseDown[2] = false; // alt-tab must not stick buttons
+    });
 
     document.addEventListener('mousemove', (e) => {
       if (!this.locked || !this.enabled) return;

@@ -174,6 +174,14 @@ sm.on(State.MENU, {
     hud.hide();
     controls.enabled = false;
     controls.unlock();
+    // clear every trace of the abandoned run: killer rigs, The Nun's darkness,
+    // static/desat overlays, the targeting box
+    director.reset();
+    daynight.lightDim = 0;
+    effects.lightDim = effects.static = effects.desat = effects.chainsaw = 0;
+    hud.setStatic(0);
+    hud.setDesat(0);
+    interaction.highlight.visible = false;
   },
 });
 sm.on(State.PLAYING, {
@@ -202,7 +210,10 @@ sm.on(State.DEAD, {
     SFX.screech();
     const face = killer ? killer.rig.painter.getFaceCanvas('headFront') : null;
     playJumpscare(jumpscareCanvas, face, () => {
-      menus.showDeath(killer ? killer.def.name : null, nights, bestNights());
+      // a same-frame WON/MENU transition must not be stomped by a late callback
+      if (sm.current === State.DEAD) {
+        menus.showDeath(killer ? killer.def.name : null, nights, bestNights());
+      }
     });
   },
 });
@@ -218,6 +229,11 @@ sm.on(State.WON, {
 controls.onLockLost = () => {
   if (sm.current === State.PLAYING) sm.set(State.PAUSED);
 };
+// browsers throttle pointer-lock re-requests right after Esc; if Resume couldn't
+// re-lock, a click on the world reacquires it
+renderer.domElement.addEventListener('mousedown', () => {
+  if (sm.current === State.PLAYING && !controls.locked) controls.lock();
+});
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && sm.current === State.PLAYING && !controls.locked) {
     sm.set(State.PAUSED); // fallback when running without pointer lock (tests)

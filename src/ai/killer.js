@@ -103,13 +103,16 @@ export class Killer {
     this.stateTime = 0;
     this.unseenTime = 0;
     this.stalkClock = 0;
+    if (prev === STATES.ATTACK) this.attackT = 0; // don't freeze mid-swing (e.g. dawn flee)
     if (next === STATES.CHASE && prev !== STATES.ATTACK && prev !== STATES.STUNNED && ctx?.onChaseStart) {
       ctx.onChaseStart(this);
     }
   }
 
   tryStun(dir) {
-    if (this.despawned || this.state === STATES.SPAWNING || this.immunity > 0) return false;
+    // already-stunned killers can't be re-stunned — melee spam must not stun-lock
+    if (this.despawned || this.state === STATES.SPAWNING || this.state === STATES.STUNNED ||
+        this.immunity > 0) return false;
     this.setState(STATES.STUNNED, null);
     this.stunTimer = this.stats.stunTime ?? 2;
     this.attackT = 0;
@@ -301,16 +304,16 @@ export class Killer {
 
   autoHop() {
     if (!this.blockedXZ || !this.onGround) return;
-    // hop if the obstacle is exactly one block tall with head clearance
+    // hop if the obstacle is exactly one block tall with body clearance above it
     const dirX = Math.sin(this.facing), dirZ = Math.cos(this.facing);
     const bx = Math.floor(this.pos.x + dirX * (this.width / 2 + 0.4));
     const bz = Math.floor(this.pos.z + dirZ * (this.width / 2 + 0.4));
     const feetY = Math.floor(this.pos.y + 0.01);
-    if (this.world.isSolid(bx, feetY, bz) &&
-        !this.world.isSolid(bx, feetY + 1, bz) &&
-        !this.world.isSolid(Math.floor(this.pos.x), feetY + Math.ceil(this.height) + 1, Math.floor(this.pos.z))) {
-      this.vel.y = CONFIG.KILLER_JUMP;
+    if (!this.world.isSolid(bx, feetY, bz)) return;
+    for (let i = 1; i <= Math.ceil(this.height); i++) {
+      if (this.world.isSolid(bx, feetY + i, bz)) return;
     }
+    this.vel.y = CONFIG.KILLER_JUMP;
   }
 
   trackStuck(dt, ctx) {
@@ -336,6 +339,7 @@ export class Killer {
     const dirX = Math.sin(this.facing), dirZ = Math.cos(this.facing);
     const bx = Math.floor(this.pos.x + dirX * (this.width / 2 + 0.5));
     const bz = Math.floor(this.pos.z + dirZ * (this.width / 2 + 0.5));
+    if (!this.world.inBoundsXZ(bx, bz)) return false; // the world rim is a wall, not blocks
     const feetY = Math.floor(this.pos.y + 0.01);
     for (const y of [feetY + 1, feetY, feetY + 2]) {
       if (y < 0 || y >= CONFIG.WORLD_HEIGHT) continue;

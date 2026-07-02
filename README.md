@@ -43,7 +43,7 @@ game through this same surface.
 | Space | jump |
 | Left click | mine block / swing axe |
 | Right click | place block |
-| 1–6 / wheel | hotbar |
+| 1–7 / wheel | hotbar |
 | Esc | pause |
 
 ## How it works

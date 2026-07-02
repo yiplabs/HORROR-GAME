@@ -222,7 +222,7 @@ export const ROSTER = [
     id: 'goodguy',
     name: 'The Good Guy',
     scale: 0.55,
-    aabb: { w: 0.45, h: 1.05 },
+    aabb: { w: 0.45, h: 0.95 }, // under 1 block tall — really does fit through 1-block gaps
     proportions: { head: 1.35 },
     props: [{ kind: 'knife', scale: 1.8 }],
     anim: { swingAmp: 1.0 },

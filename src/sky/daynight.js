@@ -16,7 +16,7 @@ const KEYS = [
   { t: 0.60, sky: '#4a1812', fog: '#38120c', near: 16, far: 62,  sun: 0.45, hemi: 0.3, sunColor: '#ff7744' },
   { t: 0.65, sky: '#05060f', fog: '#04040c', near: 9,  far: 42,  sun: 0.28, hemi: 0.14, sunColor: '#9db4ff' },
   { t: 0.95, sky: '#05060f', fog: '#04040c', near: 9,  far: 42,  sun: 0.28, hemi: 0.14, sunColor: '#9db4ff' },
-  { t: 1.00, sky: '#c96f3f', fog: '#c98a5f', near: 20, far: 95,  sun: 1.0, hemi: 0.55, sunColor: '#ffd9a8' },
+  { t: 1.00, sky: '#c96f3f', fog: '#c98a5f', near: 26, far: 115, sun: 1.4, hemi: 0.7, sunColor: '#ffd9a8' }, // must match t: 0.00 or 6 AM pops
 ];
 
 const _skyColor = new THREE.Color();

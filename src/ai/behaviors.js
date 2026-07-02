@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
 import { aabbFree } from '../core/physics.js';
+import { LEAVES, LOG } from '../world/blocks.js';
 
 // Reusable building blocks for character quirks. Roster behavior hooks compose these.
 
@@ -8,6 +9,8 @@ export function surfaceSpot(world, x, z, killer) {
   const bx = Math.floor(x), bz = Math.floor(z);
   const top = world.surfaceHeight(bx, bz);
   if (top < CONFIG.WATER_Y) return null; // don't materialize in the ocean
+  const ground = world.getBlock(bx, top, bz);
+  if (ground === LEAVES || ground === LOG) return null; // not on tree canopies
   const spot = { x: bx + 0.5, y: top + 1, z: bz + 0.5 };
   if (killer && !aabbFree(world, { x: spot.x, y: spot.y + 0.01, z: spot.z }, killer.width, killer.height)) return null;
   return spot;

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { raycastVoxel, lineOfSight } from '../world/raycast.js';
-import { BLOCKS, AIR, WATER, DIRT, STONE, LOG, LEAVES, PLANKS } from '../world/blocks.js';
+import { BLOCKS, AIR, WATER, DIRT, STONE, SAND, LOG, LEAVES, PLANKS } from '../world/blocks.js';
 import { entityOverlapsBlock } from '../core/physics.js';
 
 export const HOTBAR = [
@@ -9,6 +9,7 @@ export const HOTBAR = [
   { kind: 'block', id: PLANKS },
   { kind: 'block', id: DIRT },
   { kind: 'block', id: STONE },
+  { kind: 'block', id: SAND },
   { kind: 'block', id: LOG },
   { kind: 'block', id: LEAVES },
 ];
@@ -27,7 +28,7 @@ export class Interaction {
     this.hud = hud;
     this.getKillers = getKillers;
 
-    this.inventory = { [PLANKS]: CONFIG.START_PLANKS, [DIRT]: 0, [STONE]: 0, [LOG]: 0, [LEAVES]: 0 };
+    this.inventory = { [PLANKS]: CONFIG.START_PLANKS, [DIRT]: 0, [STONE]: 0, [SAND]: 0, [LOG]: 0, [LEAVES]: 0 };
     this.selected = 0;
     this.mineKey = null;      // packed coord of the block being mined
     this.mineProgress = 0;    // 0..1
@@ -87,7 +88,7 @@ export class Interaction {
   }
 
   reset() {
-    this.inventory = { [PLANKS]: CONFIG.START_PLANKS, [DIRT]: 0, [STONE]: 0, [LOG]: 0, [LEAVES]: 0 };
+    this.inventory = { [PLANKS]: CONFIG.START_PLANKS, [DIRT]: 0, [STONE]: 0, [SAND]: 0, [LOG]: 0, [LEAVES]: 0 };
     this.selected = 0;
     this.mineKey = null;
     this.mineProgress = 0;
@@ -114,7 +115,10 @@ export class Interaction {
     // targeting ray from the eye
     this.camera.getWorldPosition(_origin);
     this.camera.getWorldDirection(_dir);
-    const hit = raycastVoxel(this.world, _origin, _dir, CONFIG.REACH);
+    let hit = raycastVoxel(this.world, _origin, _dir, CONFIG.REACH);
+    // the solid "floor" below y=0 is a physics wall, not a real block — not
+    // targetable (mining it granted infinite drops since setBlock no-ops there)
+    if (hit && hit.y < 0) hit = null;
 
     if (hit) {
       this.highlight.visible = true;
@@ -125,11 +129,12 @@ export class Interaction {
 
     // ---- left mouse: melee first, else mine ----
     let mined = false;
+    let meleeLanded = false;
     if (c.mouseDown[0] && !this.player.dead) {
       if (c.justPressed[0] && slot.kind === 'weapon' && this.meleeCooldown <= 0) {
-        this.tryMelee(_origin, _dir);
+        meleeLanded = this.tryMelee(_origin, _dir);
       }
-      if (hit && BLOCKS[hit.id].breakTime !== undefined) {
+      if (!meleeLanded && hit && BLOCKS[hit.id].breakTime !== undefined) {
         mined = true;
         const key = this.world.packCoord(hit.x, hit.y, hit.z);
         if (key !== this.mineKey) { this.mineKey = key; this.mineProgress = 0; }
@@ -201,5 +206,6 @@ export class Interaction {
       if (k.tryStun(_toKiller)) hitAny = true;
     }
     if (this.onSfx) this.onSfx(hitAny ? 'meleeHit' : 'whoosh');
+    return hitAny;
   }
 }

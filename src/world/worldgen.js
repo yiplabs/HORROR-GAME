@@ -40,7 +40,9 @@ export function generateWorld(world, seed) {
 
   // --- cabins (before trees so trees keep clear of them) ---
   const cabinSpots = [];
-  for (const angle of [rand() * Math.PI * 2, rand() * Math.PI * 2 + Math.PI * 0.8]) {
+  const cabinAngle = rand() * Math.PI * 2;
+  // second cabin on the far side of the island so they can never overlap
+  for (const angle of [cabinAngle, cabinAngle + Math.PI + (rand() - 0.5) * 0.8]) {
     const dist = 20 + rand() * 10;
     const cx = Math.round(center + Math.cos(angle) * dist);
     const cz = Math.round(center + Math.sin(angle) * dist);
